@@ -227,7 +227,7 @@ function tts(who,t,done){try{const u=new SpeechSynthesisUtterance(t);u.rate=1.05
 function vnext(){const id=vq.shift();if(!id){vb=0;return}vb=1;const[who,t]=LN[id],el=$('radio');
 el.innerHTML+='<div style=color:'+(who=='ATC'?'#9fe8ff':who=='CABIN'?'#c8ffb0':'#ffd23f')+'><b>'+who+':</b> '+t+'</div>';while(el.children.length>6)el.removeChild(el.firstChild);el.style.opacity=1;clearTimeout(radioT);radioT=setTimeout(()=>{el.style.opacity=0},14000);
 let fin=0,used=0;const done=()=>{if(fin)return;fin=1;setTimeout(vnext,450)},fb=()=>{if(used)return;used=1;tts(who,t,done)};
-const a=new Audio('voice/'+id+'.mp3');a.onended=done;a.onerror=fb;a.play().then(()=>{},fb)}
+const a=new Audio(id+'.mp3');a.onended=done;a.onerror=fb;a.play().then(()=>{},fb)}
 const brg=a=>pad((Math.atan2(a.x-plane.position.x,-(a.z-plane.position.z))*180/PI+360)%360),rwy=()=>{const f=V3().set(0,0,-1).applyQuaternion(plane.quaternion),r=Math.round(((Math.atan2(f.x,-f.z)*180/PI+360)%360)/10)%36||36;return(r<10?'0':'')+r};
 function talk(skip){if(!started||dead||vb)return;const P=id=>{if(!skip)say(id)},p=plane.position,V=vel.length(),agl=p.y-3.6-hf(p.x,p.z),D=AP[to],dd=Math.hypot(D.x-p.x,D.z-p.z),rw=rwAt(p);
 if(fire){P('p_mayday');say('atc_mayday')}

@@ -74,7 +74,7 @@ const style={version:8,glyphs:GLYPHS,
   {id:'bld',type:'fill-extrusion',source:'omt','source-layer':'building',minzoom:14,paint:{'fill-extrusion-color':'#d3d6db','fill-extrusion-height':['coalesce',['get','render_height'],6],'fill-extrusion-base':['coalesce',['get','render_min_height'],0],'fill-extrusion-opacity':.92}}],
  terrain:{source:'dem',exaggeration:1},
  sky:{'sky-color':'#7fb8ff','horizon-color':'#e4f0ff','fog-color':'#e4f0ff','sky-horizon-blend':.5,'horizon-fog-blend':.6,'fog-ground-blend':.4}};
-const mk=mp=>new maplibregl.Map({container:'map',style,center:[origin.lon,origin.lat],zoom:14,pitch:80,maxPitch:mp,maxZoom:24,interactive:false,attributionControl:false,pixelRatio:Math.min(devicePixelRatio||1,2),fadeDuration:0,maxTileCacheSize:768,canvasContextAttributes:{antialias:true}});
+const mk=mp=>new maplibregl.Map({container:'map',style,center:[origin.lon,origin.lat],zoom:14,pitch:80,maxPitch:mp,maxZoom:24,interactive:false,attributionControl:false,pixelRatio:Math.min(devicePixelRatio||1,2),fadeDuration:0,maxTileCacheSize:512,canvasContextAttributes:{antialias:true}});
 let map;try{map=mk(120)}catch(e){map=mk(85)}
 
 /* ---------- 3D plane (three.js custom layer) ---------- */
@@ -100,7 +100,7 @@ const layer={id:'plane3d',type:'custom',renderingMode:'3d',
   const m=new THREE.Matrix4().fromArray(mat),l=new THREE.Matrix4().makeTranslation(mc.x,mc.y,mc.z).scale(new THREE.Vector3(s,-s,s));
   this.camera.projectionMatrix=m.multiply(l);this.renderer.resetState();this.renderer.render(this.scene,this.camera)}catch(e){if(!this.err){this.err=1;console.error('plane render',e);toast('Plane render error: '+e.message,9000)}}}};
 let errMsg='',layerOK=false;
-function initLayer(){if(ready)return;ready=true;try{if(map.setSourceTileLodParams){map.setSourceTileLodParams(6,6,'sat');map.setSourceTileLodParams(6,6,'dem')}}catch(e){console.warn('lod',e)}try{if(map.setTileLodMinRadius)map.setTileLodMinRadius(4)}catch(e){}
+function initLayer(){if(ready)return;ready=true;try{if(map.setSourceTileLodParams){map.setSourceTileLodParams(4,4,'sat');map.setSourceTileLodParams(4,4,'dem')}}catch(e){console.warn('lod',e)}
  try{if(map.setCenterClampedToGround)map.setCenterClampedToGround(false);else errMsg='This MapLibre build has no setCenterClampedToGround'}catch(e){errMsg='clamp: '+(e&&e.message||e)}
 /* camera works even if the 3D plane fails */
  try{map.addLayer(layer);setModel(builtIn(),44);layerOK=true}catch(e){console.error('plane layer failed',e);toast('3D plane failed to start: '+(e&&e.message||e),9000)}

@@ -112,14 +112,14 @@ map.once('idle',()=>{try{const el=map.queryTerrainElevation([origin.lon,origin.l
 
 /* ---------- plane picker (planes/planes.json) ---------- */
 let planes=[{name:'Airliner (twin jet, blue)',builtin:true,t:'a'},{name:'Jumbo (4 engines, red)',builtin:true,t:'j'},{name:'Regional jet (green)',builtin:true,t:'g'}];const loader=new THREE.GLTFLoader();
-function loadGlb(p){return new Promise((res,rej)=>loader.load('planes/'+p.file,g=>{
+function loadGlb(p){return new Promise((res,rej)=>loader.load(p.file,g=>{
  const inner=new THREE.Group();inner.add(g.scene);inner.rotation.y=(p.yaw!=null?p.yaw:180)*D2R;const wrap=new THREE.Group();wrap.add(inner);wrap.rotation.x=Math.PI/2;dbl(wrap);
  const root=new THREE.Group();root.add(wrap);root.updateMatrixWorld(true);let b=new THREE.Box3().setFromObject(root),sz=b.getSize(new THREE.Vector3());
  const len=p.length||sz.y,k=p.length?p.length/sz.y:(p.scale||1);root.scale.setScalar(k);root.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(root);const c=b.getCenter(new THREE.Vector3());
  root.position.set(-c.x,-c.y,-GEAR_H-b.min.z);const out=new THREE.Group();out.add(root);res({m:out,len:len});},undefined,()=>rej(new Error('missing'))))}
-async function pickPlane(p,quiet){try{if(p.builtin)setModel(builtIn(p.t),44);else{const r=await loadGlb(p);setModel(r.m,r.len)}$('pn').textContent=p.name;try{localStorage.setItem('skyPlane',p.name)}catch(e){}}catch(e){toast('planes/'+p.file+' was not found. Using the built-in plane.',4000);setModel(builtIn(),44);$('pn').textContent='Built-in airliner'}}
+async function pickPlane(p,quiet){try{if(p.builtin)setModel(builtIn(p.t),44);else{const r=await loadGlb(p);setModel(r.m,r.len)}$('pn').textContent=p.name;try{localStorage.setItem('skyPlane',p.name)}catch(e){}}catch(e){toast(p.file+' was not found. Using the built-in plane.',4000);setModel(builtIn(),44);$('pn').textContent='Built-in airliner'}}
 function buildPick(){const l=$('pickList');l.innerHTML='';planes.forEach(p=>{const b=document.createElement('button');b.className='btn';b.textContent=p.name+(p.builtin?'':'  ('+p.file+')');b.onclick=()=>{$('pick').style.display='none';pickPlane(p)};l.appendChild(b)})}
-fetch('planes/planes.json').then(r=>r.ok?r.json():[]).catch(()=>[]).then(j=>{planes=planes.concat(Array.isArray(j)?j:[]);buildPick();restorePlane()});
+fetch('planes.json').then(r=>r.ok?r.json():[]).catch(()=>[]).then(j=>{planes=planes.concat(Array.isArray(j)?j:[]);buildPick();restorePlane()});
 let restored=false;function restorePlane(){if(restored||!ready||planes.length<2)return;restored=true;let n=null;try{n=localStorage.getItem('skyPlane')}catch(e){}const p=planes.find(x=>x.name===n);if(p)pickPlane(p)}
 $('bPlane').onclick=e=>{e.target.blur();$('pick').style.display='block'};$('pickX').onclick=()=>$('pick').style.display='none';
 

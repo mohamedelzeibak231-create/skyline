@@ -13,10 +13,10 @@ html,body{height:100%;margin:0;background:#05080f;color:#e8f1ff;font:12px/1.5 ui
 #ov>div{max-width:520px;padding:24px;background:rgba(8,14,26,.85);border-radius:14px}
 h1{margin:0 0 8px;font-size:26px}button{font:inherit;font-size:16px;padding:10px 24px;border:0;border-radius:8px;background:#ffb347;cursor:pointer}
 </style></head><body>
-<canvas id="c"></canvas>
+<canvas id="c"></canvas><iframe id="cz" allow="fullscreen" style="position:fixed;inset:0;width:100%;height:100%;border:0;display:none;pointer-events:none"></iframe>
 <div id="hud" class="p"></div><div id="mis" class="p"></div><div id="warn" class="p"></div><canvas id="map" class="p" width="220" height="220" style="left:10px;bottom:10px;padding:0;border-radius:50%"></canvas><div id="fl" style="position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none"></div><div id="radio" class="p" style="left:10px;top:200px;max-width:360px;font-size:11px;opacity:0;transition:opacity .5s"></div>
-<div id="mic" class="p" style="left:50%;bottom:120px;transform:translateX(-50%);font-size:16px;color:#7fff9f;opacity:0;transition:opacity .2s;text-align:center"></div><div id="keys" class="p">W/S throttle · ↑↓ pitch (↓ = pull up) · ←→ roll · A/D rudder · G gear · F flaps · B brake · X extinguish · V view · I invert · M talk to ATC (mic) · N map zoom · C cabin walk (Q/E move, drag to look) · P autopilot (U/J alt · , . hdg · K LNAV · H autoland) · Enter next/skip ground ops · R restart · drag = look</div>
-<div id="gs" class="p" style="left:50%;top:60px;transform:translateX(-50%);font-size:15px;color:#ffd23f;opacity:0;text-align:center"></div><button id="skip" style="position:fixed;right:14px;bottom:60px;z-index:5;display:none;font-size:14px;padding:8px 16px;background:#ffd23f">SKIP TO RUNWAY ▶▶</button><div id="cb1" style="position:fixed;left:0;right:0;top:0;height:9vh;background:#000;transition:height 2.5s;pointer-events:none"></div><div id="cb2" style="position:fixed;left:0;right:0;bottom:0;height:9vh;background:#000;transition:height 2.5s;pointer-events:none"></div><div id="ov"><div><h1 id="ovt">SKYLINE HEAVY</h1><p id="ovp"><b style="color:#ffd23f">06:12 · ALPHA FIELD · WIND 270/03 · QNH 1013</b><br>Your Skyline Heavy is at the gate. Watch boarding, get pushed back, taxi to runway 36 and hold short, then fly 3 legs with real stall physics, engine fires, fog and a mountain strip.<br>Call ATC with <b>M</b> (mic) or press <b>Enter</b> when prompted. After takeoff: <b>P</b> autopilot, <b>H</b> autoland.<br>6 min of sun, 6 min of night, on repeat. Keyboard needed.</p><button id="go">BOARD THE AIRCRAFT</button></div></div>
+<div id="mic" class="p" style="left:50%;bottom:120px;transform:translateX(-50%);font-size:16px;color:#7fff9f;opacity:0;transition:opacity .2s;text-align:center"></div><div id="keys" class="p">W/S throttle · ↑↓ pitch (↓ = pull up) · ←→ roll · A/D rudder · G gear · F flaps · B brake · X extinguish · V view · T real-world Cesium view · I invert · M talk to ATC (mic) · N map zoom · C cabin walk (Q/E move, drag to look) · P autopilot (U/J alt · , . hdg · K LNAV · H autoland) · Enter next/skip ground ops · R restart · drag = look</div>
+<div id="gs" class="p" style="left:50%;top:60px;transform:translateX(-50%);font-size:15px;color:#ffd23f;opacity:0;text-align:center"></div><button id="czb" style="position:fixed;right:14px;bottom:100px;z-index:5;font-size:13px;padding:8px 14px;background:#4da3ff">🌍 REAL WORLD (T)</button><button id="skip" style="position:fixed;right:14px;bottom:60px;z-index:5;display:none;font-size:14px;padding:8px 16px;background:#ffd23f">SKIP TO RUNWAY ▶▶</button><div id="cb1" style="position:fixed;left:0;right:0;top:0;height:9vh;background:#000;transition:height 2.5s;pointer-events:none"></div><div id="cb2" style="position:fixed;left:0;right:0;bottom:0;height:9vh;background:#000;transition:height 2.5s;pointer-events:none"></div><div id="ov"><div><h1 id="ovt">SKYLINE HEAVY</h1><p id="ovp"><b style="color:#ffd23f">06:12 · ALPHA FIELD · WIND 270/03 · QNH 1013</b><br>Your Skyline Heavy is at the gate. Watch boarding, get pushed back, taxi to runway 36 and hold short, then fly 3 legs with real stall physics, engine fires, fog and a mountain strip.<br>Call ATC with <b>M</b> (mic) or press <b>Enter</b> when prompted. After takeoff: <b>P</b> autopilot, <b>H</b> autoland.<br>6 min of sun, 6 min of night, on repeat. Keyboard needed.</p><button id="go">BOARD THE AIRCRAFT</button></div></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const T=THREE,$=id=>document.getElementById(id),V3=()=>new T.Vector3(),rnd=Math.random,PI=Math.PI;
@@ -410,7 +410,7 @@ if(!dead){if(al>.24&&!onG)toast('STALL STALL',400);else if(vel.y<-9&&agl<300)toa
 addEventListener('keydown',e=>{if(e.code.startsWith('Arrow')||e.code=='Space')e.preventDefault();if(e.repeat)return;K[e.code]=1;aud();if(!started)return;
 if(e.code=='KeyR')return init();if(dead)return;if(e.code=='Enter'&&ph<7)return nextG();apKeys(e.code);
 if(e.code=='KeyG'){gear=!gear;toast(gear?'Gear DOWN':'Gear UP',1200)}
-if(e.code=='KeyF')flapS=(flapS+1)%4;if(e.code=='KeyV')setView((view+1)%3);if(e.code=='KeyI')inv=!inv;if(e.code=='KeyN')mri=(mri+1)%3;if(e.code=='KeyM')listen();
+if(e.code=='KeyF')flapS=(flapS+1)%4;if(e.code=='KeyV')setView((view+1)%3);if(e.code=='KeyT')czTog();if(e.code=='KeyI')inv=!inv;if(e.code=='KeyN')mri=(mri+1)%3;if(e.code=='KeyM')listen();
 if(e.code=='KeyX'&&fire){fire=false;fireT=0;toast('Fire out. Engine damaged, fly on one and a half.',3500)}});
 addEventListener('keyup',e=>K[e.code]=0);
 $('c').addEventListener('pointerdown',()=>drag=true);addEventListener('pointerup',()=>drag=false);
@@ -425,6 +425,12 @@ if(gn){osc.frequency.value=45+thr*90;gn.gain.value=listening?0:.02+.05*thr}}
 const eng2=V3();if(fire||dead){plane.updateMatrixWorld();const p=dead?plane.position:plane.localToWorld(eng2.set(6.3,-1.5,0));for(let i=0;i<(dead?7:4);i++){const s=dead?8:1;fireP.emit(p.x+(rnd()-.5)*s*2,p.y+(rnd()-.5)*s,p.z+(rnd()-.5)*s*2,vel.x*.9+(rnd()-.5)*6,vel.y*.9+rnd()*8,vel.z*.9+(rnd()-.5)*6,.8+rnd()*.6);
 if(i<2)smokeP.emit(p.x,p.y+2,p.z,(rnd()-.5)*6,8+rnd()*8,(rnd()-.5)*6,3+rnd()*3)}}
 fireP.up(dt);smokeP.up(dt);fx2(dt);wUp(dt);animGear(dt);camUp(dt);env();if(started)drawMap();
-if((hudT+=dt)>.12){hudT=0;hud()}R.render(S,cam)}
+if((hudT+=dt)>.12){hudT=0;hud()}if(czOn)czSend();else R.render(S,cam)}
+// ---- real-world view: streams the plane pose into cesium.html (iframe) ----
+const CZ_ORIGIN='EIDW';let czOn=false;const czE=new T.Euler(0,0,0,'YXZ');
+function czSend(){const f=$('cz').contentWindow;if(!f)return;const p=plane.position;czE.setFromQuaternion(plane.quaternion,'YXZ');
+ f.postMessage({type:'pose',x:p.x,y:p.y-3.6,z:p.z,hdg:-czE.y*180/PI,pitch:czE.x*180/PI,roll:-czE.z*180/PI,v:vel.length(),view:view,ly:lookY,lp:lookP},'*')}
+function czTog(){const f=$('cz');czOn=!czOn;if(czOn&&!f.src)f.src='cesium.html?embed=1&origin='+CZ_ORIGIN;f.style.display=czOn?'block':'none';$('c').style.opacity=czOn?0:1;$('czb').textContent=czOn?'🎮 GAME WORLD (T)':'🌍 REAL WORLD (T)';toast(czOn?'Real world (Cesium) · press T to go back':'Game world',2200)}
+$('czb').onclick=e=>{e.target.blur();czTog()};
 init(true);started=false;$('ov').style.display='flex';requestAnimationFrame(loop);
 </script></body></html>

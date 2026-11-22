@@ -33,7 +33,7 @@ html,body{margin:0;height:100%;background:#050a14;overflow:hidden;font:11px/1.5 
 <div id="bar"><button class="btn" id="bMap">🗺 World map</button><button class="btn" id="bPlane">✈ Plane: <span id="pn">Built-in</span></button></div>
 <div id="attr">© Esri, Maxar, Earthstar Geographics · Terrain: Mapzen / AWS · Buildings: © OpenStreetMap contributors via OpenFreeMap · Airports: OurAirports · Traffic: adsb.lol · MapLibre</div>
 <div id="hint">Waiting for the game…<br><br>Open <b>index.html</b> from your site and press <b>T</b>. This page shows the real world around the plane you fly there.</div>
-<div id="toast"></div><div id="mini"></div><div id="miniA"><svg width="22" height="22" viewBox="-12 -12 24 24"><path d="M0-10L6 8 0 4-6 8Z" fill="#ffd23f" stroke="#000" stroke-width="1.5"/></svg></div>
+<div id="toast"></div><div id="dbg" style="position:fixed;left:10px;bottom:70px;font-size:10px;opacity:.55;z-index:3;pointer-events:none"></div><div id="mini"></div><div id="miniA"><svg width="22" height="22" viewBox="-12 -12 24 24"><path d="M0-10L6 8 0 4-6 8Z" fill="#ffd23f" stroke="#000" stroke-width="1.5"/></svg></div>
 <div id="pick" class="pnl"><h2>CHOOSE YOUR PLANE</h2><div id="pickList"></div><p>Add your own: put a <b>.glb</b> in the <b>planes</b> folder and list it in <b>planes/planes.json</b>.</p><button class="btn" id="pickX" style="margin-top:12px">Close</button></div>
 <div id="bigmap"><div id="bm"></div><div id="bmbar"><button class="btn" id="bmClose">✕</button><button class="btn" id="bmMe">⌖ Centre on me</button><div id="bmin">Loading…</div></div></div>
 
@@ -99,8 +99,10 @@ const layer={id:'plane3d',type:'custom',renderingMode:'3d',
   const mc=maplibregl.MercatorCoordinate.fromLngLat([P.lon,P.lat],P.alt),s=mc.meterInMercatorCoordinateUnits();
   const m=new THREE.Matrix4().fromArray(mat),l=new THREE.Matrix4().makeTranslation(mc.x,mc.y,mc.z).scale(new THREE.Vector3(s,-s,s));
   this.camera.projectionMatrix=m.multiply(l);this.renderer.resetState();this.renderer.render(this.scene,this.camera)}catch(e){if(!this.err){this.err=1;console.error('plane render',e);toast('Plane render error: '+e.message,9000)}}}};
-let layerOK=false;
-function initLayer(){if(ready)return;ready=true;/* camera works even if the 3D plane fails */
+let errMsg='',layerOK=false;
+function initLayer(){if(ready)return;ready=true;
+ try{if(map.setCenterClampedToGround)map.setCenterClampedToGround(false);else errMsg='This MapLibre build has no setCenterClampedToGround'}catch(e){errMsg='clamp: '+(e&&e.message||e)}
+/* camera works even if the 3D plane fails */
  try{map.addLayer(layer);setModel(builtIn(),44);layerOK=true}catch(e){console.error('plane layer failed',e);toast('3D plane failed to start: '+(e&&e.message||e),9000)}
  restorePlane()}
 map.on('error',e=>console.warn('map error:',e&&e.error&&e.error.message||e));
@@ -133,7 +135,6 @@ setInterval(()=>{const h=$('hint');let m='';
 
 /* ---------- camera ---------- */
 const off=(lat,lon,b,d)=>[lat+d*Math.cos(b)/R_E/D2R,lon+d*Math.sin(b)/(R_E*Math.cos(lat*D2R))/D2R];
-let errMsg='';
 function frame(){requestAnimationFrame(frame);if(!P.have||!ready)return;try{frameBody()}catch(e){if(!frame.err){frame.err=1;console.error('camera',e);errMsg='Camera error:<br>'+(e&&e.message||e)}}}
 function frameBody(){
  qz.setFromAxisAngle(Z,-P.hdg);qx.setFromAxisAngle(X,P.th);qy.setFromAxisAngle(Y,P.rl);holder.quaternion.copy(qz).multiply(qx).multiply(qy);
@@ -143,7 +144,9 @@ function frameBody(){
  else{const f=modelLen*.38;[la,lo]=off(P.lat,P.lon,P.hdg,f*Math.cos(P.th));alt=P.alt+1.6+f*Math.sin(P.th);elev=P.th/D2R+lk.p/D2R;roll=P.rl/D2R*ROLL_SIGN}
  const L=2000,er=elev*D2R,tg=off(la,lo,cb,L*Math.cos(er));
  let o;try{o=map.calculateCameraOptionsFromTo(new maplibregl.LngLat(lo,la),alt,new maplibregl.LngLat(tg[1],tg[0]),alt+L*Math.sin(er))}catch(e){errMsg='Camera API:<br>'+(e&&e.message||e);o={center:[lo,la],zoom:16,pitch:clamp(90+elev,0,mp),bearing:cb/D2R}}
- o.roll=roll;map.jumpTo(o)}
+ o.roll=roll;map.jumpTo(o);
+ try{if(map.setCenterElevation)map.setCenterElevation(o.elevation);else if(map.transform&&map.transform.setElevation)map.transform.setElevation(o.elevation)}catch(e){errMsg='elev: '+(e&&e.message||e)}
+ const dg=$('dbg');if(dg)dg.textContent='alt '+Math.round(P.alt)+'m · cam elev '+Math.round(o.elevation)+' · zoom '+(+o.zoom).toFixed(1)+' · pitch '+Math.round(o.pitch)+' · view '+P.view+(typeof map.setCenterElevation=='function'?'':' · NO setCenterElevation')}
 requestAnimationFrame(frame);
 // day / night from the game's clock
 let lastF=-1;setInterval(()=>{if(!ready)return;const f=sm(-.12,.25,P.day);if(Math.abs(f-lastF)<.02)return;lastF=f;
@@ -187,6 +190,7 @@ async function poll(){if(!bmOn||!bm||!bm.getSource('ac'))return;const c=bm.getCe
   bm.getSource('ac').setData({type:'FeatureCollection',features:f});$('bmin').textContent='LIVE · '+f.length+' aircraft · radius '+Math.round(nm)+' nm · click a plane or airport'}
  catch(e){$('bmin').textContent='Live traffic unavailable right now (adsb.lol). Airports still work.'}}
 function meUpdate(){if(!bmOn||!bm||!bm.getSource('me'))return;bm.getSource('me').setData({type:'FeatureCollection',features:P.have?[{type:'Feature',geometry:{type:'Point',coordinates:[P.lon,P.lat]},properties:{trk:Math.round(P.hdg/D2R)}}]:[]})}
+setInterval(()=>{if(!ready||!P.have)return;try{const h=map.queryTerrainElevation([P.lon,P.lat]);if(h!=null&&isFinite(h))parent.postMessage({type:'terr',h},'*')}catch(e){}},250);
 setInterval(meUpdate,200);setInterval(poll,9000);
 $('bMap').onclick=e=>{e.target.blur();bmOn=true;$('bigmap').style.display='block';if(!bm)initBig();else{bm.resize();poll()}if(P.have&&bm)bm.jumpTo({center:[P.lon,P.lat]})};
 $('bmClose').onclick=()=>{bmOn=false;$('bigmap').style.display='none'};$('bmMe').onclick=()=>{if(P.have)bm.flyTo({center:[P.lon,P.lat],zoom:Math.max(bm.getZoom(),9)});else toast('No plane position yet',2000)};

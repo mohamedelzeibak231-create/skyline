@@ -267,7 +267,7 @@ function updateView(dt){
  const s=st,pos=C.Cartesian3.fromRadians(s.lon,s.lat,s.h);
  if(model){model.modelMatrix=C.Transforms.headingPitchRollToFixedFrame(pos,new C.HeadingPitchRoll(s.hdg-Math.PI/2+MODEL_YAW,s.th,s.rl));model.show=view!=1}
  if(!running&&!EMBED){orb+=dt*.12;cam.lookAt(C.Cartesian3.fromRadians(s.lon,s.lat,s.h),new C.HeadingPitchRange(orb,-.28,CHASE_R*5));return}
- if(!drag){lk.h*=.94;lk.p*=.94}
+ if(!drag&&!ext){lk.h*=.94;lk.p*=.94}
  if(s.crash){orb+=dt*.2;cam.lookAt(pos,new C.HeadingPitchRange(orb,-.35,CHASE_R*3));return}
  if(view==0)cam.lookAt(pos,new C.HeadingPitchRange(s.hdg+lk.h,clamp(s.gm*.5-.11+lk.p,-1.4,1),CHASE_R));
  else if(view==1){cam.lookAtTransform(C.Matrix4.IDENTITY);cam.setView({destination:C.Cartesian3.fromRadians(s.lon,s.lat,s.h+1.4),orientation:{heading:s.hdg+lk.h,pitch:s.th+lk.p,roll:s.rl}})}
@@ -275,7 +275,8 @@ function updateView(dt){
 }
 
 /* ---------- embed bridge: parent window posts the three.js sim pose ---------- */
-addEventListener('message',e=>{const d=e.data;if(d&&d.type==='pose')ext=d});
+let gReady=!EMBED;
+addEventListener('message',e=>{const d=e.data;if(!d||d.type!=='pose')return;ext=d;if(d.view!=null){const v=d.view==2?0:1;if(v!==view)setView(v);if(d.view==3){lk.h=lk.p=0}else if(d.ly!=null){lk.h=-d.ly;lk.p=d.lp}}});
 function applyExt(){const o=AIRPORTS[Math.max(0,AIRPORTS.findIndex(a=>a.i===(Q.get('origin')||'EIDW')))];
  const Ha=o.hd*D2R,E=ext.x*Math.cos(Ha)+(-ext.z)*Math.sin(Ha),N=-ext.x*Math.sin(Ha)+(-ext.z)*Math.cos(Ha);
  const org=C.Cartesian3.fromDegrees(o.lon,o.lat,gH),m=C.Transforms.eastNorthUpToFixedFrame(org),p=C.Matrix4.multiplyByPoint(m,new C.Cartesian3(E,N,ext.y+GEAR_H),new C.Cartesian3()),c=C.Cartographic.fromCartesian(p);
@@ -340,7 +341,7 @@ function hud(){const B=dest(),d=hav(st.lat,st.lon,B.lat*D2R,B.lon*D2R),b=brg(st.
 /* ---------- main loop ---------- */
 let last=performance.now();
 sc.preRender.addEventListener(()=>{const now=performance.now(),dt=Math.min(.1,(now-last)/1000);last=now;
- if(ext)applyExt();else if(running&&!paused&&!st.crash)step(dt);
+ if(ext){if(gReady)applyExt()}else if(running&&!paused&&!st.crash)step(dt);
  updateView(dt);if(!EMBED){drawPFD();drawCmp();if($('mmw').style.display!='none')drawMM();if((hudT+=dt)>.15){hudT=0;hud();if(running)atcUpdate(false)}}});
 
 /* ---------- controls ---------- */
@@ -383,5 +384,5 @@ $('selDep').value=0;$('selDst').value=2;
 if(EMBED){document.querySelectorAll('#top,#cmpw,#atc,#chat,#pfdw,#strip,#mmw,#mmi,#dst,#menu').forEach(e=>e.style.display='none');running=true}
 else{$('menu').style.display='block';atcUpdate(true)}
 setPhoto(true);
-(async()=>{const a=AIRPORTS[0];let g=a.e*.3048;for(let i=0;i<20&&!TP;i++)await new Promise(r=>setTimeout(r,300));const r=await sampleG(a.lat*D2R,a.lon*D2R);if(r!=null)g=r;gT=gH=g;st.h=g+GEAR_H+30})();
+(async()=>{const a=EMBED?AIRPORTS[Math.max(0,AIRPORTS.findIndex(x=>x.i===(Q.get('origin')||'EIDW')))]:AIRPORTS[0];let g=a.e*.3048;for(let i=0;i<20&&!TP;i++)await new Promise(r=>setTimeout(r,300));const r=await sampleG(a.lat*D2R,a.lon*D2R);if(r!=null)g=r;gT=gH=g;st.h=g+GEAR_H+30;gReady=true})();
 </script></body></html>

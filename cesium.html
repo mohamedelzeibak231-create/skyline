@@ -146,6 +146,15 @@ let tt;function toast(s,ms){const e=$('toast');e.textContent=s;e.style.opacity=1
 function banner(t){const b=$('banner');b.textContent=t;b.style.display='block'}
 if(ION_TOKEN.startsWith('PASTE'))banner('Open cesium.html and paste your Cesium ion token into ION_TOKEN at the top of the script.');
 C.Ion.defaultAccessToken=ION_TOKEN;
+let dgOn=false;
+async function diagnose(){if(dgOn||ION_TOKEN.startsWith('PASTE'))return;dgOn=true;
+ const ids={1:'Cesium World Terrain',2:'Bing Maps Aerial',96188:'Cesium OSM Buildings',2275207:'Google Photorealistic 3D Tiles'},bad=[];let tokenBad=false,err='';
+ for(const id in ids){try{const r=await fetch('https://api.cesium.com/v1/assets/'+id+'/endpoint?access_token='+encodeURIComponent(ION_TOKEN));if(r.status==401)tokenBad=true;else if(!r.ok)bad.push(ids[id]+' ('+r.status+')')}catch(e){err=e.message}}
+ if(tokenBad)banner('Cesium rejected the token (401). Either the token was copied wrong, or this page\'s address ('+location.origin+') is not in the token\'s allowed URLs. It must be exactly https://mohamedelzeibak231-create.github.io');
+ else if(err)banner('Could not reach api.cesium.com: '+err+' (ad blocker or network?)');
+ else if(bad.length)banner('Not in your My Assets yet: '+bad.join(', ')+'. In ion open Asset Depot and click "Add to my assets" on each.');
+ dgOn=false}
+diagnose();
 
 /* ---------- viewer ---------- */
 const terr=C.Terrain.fromWorldTerrain({requestWaterMask:true,requestVertexNormals:true});
@@ -157,7 +166,7 @@ sc.fog.enabled=true;sc.fog.density=.0003*3/3;sc.skyAtmosphere.show=true;sc.highD
 sc.screenSpaceCameraController.enableInputs=false;viewer.resolutionScale=Math.min(window.devicePixelRatio||1,2);viewer.targetFrameRate=60;
 viewer.clock.shouldAnimate=true;
 let TP=null;terr.readyEvent.addEventListener(p=>TP=p);
-terr.errorEvent.addEventListener(e=>banner('Cesium ion terrain failed to load. Check the token, its allowed URL (must match the page you opened) and that "Cesium World Terrain" is in My Assets.'));
+terr.errorEvent.addEventListener(()=>diagnose());
 async function sampleG(lat,lon){if(!TP)return null;try{const r=await C.sampleTerrainMostDetailed(TP,[new C.Cartographic(lon,lat)]);return r[0].height}catch(e){return null}}
 
 let osm=null,photo=null,photoOn=false,bldOn=true;

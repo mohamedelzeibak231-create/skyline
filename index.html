@@ -22,11 +22,17 @@ html,body{height:100%;margin:0;background:#05080f;color:#e8f1ff;font:12px/1.5 ui
 #keys .pill{display:inline-block;padding:8px 18px;border-radius:999px;border:2px solid #ff3b4e;background:rgba(40,8,16,.78);backdrop-filter:blur(8px);color:#fff;font-size:13px;letter-spacing:.02em;box-shadow:0 0 14px rgba(255,59,78,.35)}
 #keys .pill b{font-weight:800}
 #keys .more{font-size:10px;opacity:.6;background:rgba(8,14,26,.55);padding:4px 10px;border-radius:8px}
+#pfd{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);display:none;flex-direction:column;align-items:center;gap:5px;pointer-events:none;z-index:4}
+#pfd .row{display:flex;gap:6px;align-items:flex-end}#pfd canvas{display:block}
+#pfdbar{display:flex;gap:0;background:rgba(8,14,26,.72);border:1px solid rgba(120,160,255,.22);border-radius:10px;backdrop-filter:blur(8px);padding:5px 4px}
+#pfdbar div{display:flex;flex-direction:column;align-items:center;min-width:54px;padding:0 9px;border-left:1px solid rgba(120,160,255,.15)}#pfdbar div:first-child{border:0}
+#pfdbar small{font-size:8px;letter-spacing:.14em;color:#6f9bff}#pfdbar b{font-size:12px;font-weight:700;color:#fff;white-space:nowrap}
+#warn{bottom:330px!important}#mic{bottom:330px!important}
 h1{margin:0 0 8px;font-size:26px}button{font:inherit;font-size:16px;padding:10px 24px;border:0;border-radius:8px;background:#ffb347;cursor:pointer}
 </style></head><body>
 <canvas id="c"></canvas><iframe id="cz" allow="fullscreen" style="position:fixed;inset:0;width:100%;height:100%;border:0;display:none"></iframe>
 <div id="tb"><button id="tbPlane">✈ PLANE</button><button id="tbView">VIEW (V)</button><button id="tbMap">MAP</button><button id="tb3d">🌍 REAL WORLD (T)</button><button id="tbAp">AP (P)</button><button id="tbFs">⛶</button></div><div id="hud" class="p"></div><div id="mis" class="p"></div><div id="warn" class="p"></div><canvas id="map" class="p" width="220" height="220" style="left:10px;bottom:10px;padding:0;border-radius:50%"></canvas><div id="fl" style="position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none"></div><div id="radio" class="p" style="left:10px;top:200px;max-width:360px;font-size:11px;opacity:0;transition:opacity .5s"></div>
-<div id="mic" class="p" style="left:50%;bottom:120px;transform:translateX(-50%);font-size:16px;color:#7fff9f;opacity:0;transition:opacity .2s;text-align:center"></div><div id="keys" class="p"><div class="pill"><b>Q</b> throttle up · <b>E</b> throttle down · <b>W A S D</b> to fly</div><div class="more">Q/E throttle up/down · W/S pitch (S = pull up) · A/D bank · ←→ rudder · G gear · F flaps · B brake · X extinguish · V view · T real-world view · I invert · M talk to ATC (mic) · N map zoom · C cabin walk (Q/E move, drag to look) · P autopilot (U/J alt · , . hdg · K LNAV · H autoland) · Enter next/skip ground ops · R restart · drag = look</div></div>
+<div id="mic" class="p" style="left:50%;bottom:120px;transform:translateX(-50%);font-size:16px;color:#7fff9f;opacity:0;transition:opacity .2s;text-align:center"></div><div id="pfd"><div class="row"><canvas id="pfS" width="116" height="320" style="width:58px;height:160px"></canvas><div style="display:flex;flex-direction:column;gap:5px"><canvas id="pfH" width="320" height="320" style="width:160px;height:160px"></canvas><canvas id="pfG" width="320" height="48" style="width:160px;height:24px"></canvas></div><canvas id="pfA" width="116" height="320" style="width:58px;height:160px"></canvas></div><div id="pfdbar"></div></div><div id="keys" class="p"><div class="pill"><b>Q</b> throttle up · <b>E</b> throttle down · <b>W A S D</b> to fly</div><div class="more">Q/E throttle up/down · W/S pitch (S = pull up) · A/D bank · ←→ rudder · G gear · F flaps · B brake · X extinguish · V view · T real-world view · I invert · M talk to ATC (mic) · N map zoom · C cabin walk (Q/E move, drag to look) · P autopilot (U/J alt · , . hdg · K LNAV · H autoland) · Enter next/skip ground ops · R restart · drag = look</div></div>
 <div id="gs" class="p" style="left:50%;top:60px;transform:translateX(-50%);font-size:15px;color:#ffd23f;opacity:0;text-align:center"></div><button id="czb" style="position:fixed;right:14px;bottom:100px;z-index:5;font-size:13px;padding:8px 14px;background:#4da3ff">🌍 REAL WORLD (T)</button><button id="skip" style="position:fixed;right:14px;bottom:60px;z-index:5;display:none;font-size:14px;padding:8px 16px;background:#ffd23f">SKIP TO RUNWAY ▶▶</button><div id="cb1" style="position:fixed;left:0;right:0;top:0;height:9vh;background:#000;transition:height 2.5s;pointer-events:none"></div><div id="cb2" style="position:fixed;left:0;right:0;bottom:0;height:9vh;background:#000;transition:height 2.5s;pointer-events:none"></div><div id="ov"><div><h1 id="ovt">SKYLINE HEAVY</h1><p id="ovp"><b style="color:#ffd23f">REAL WORLD · CHOOSE YOUR AIRPORTS</b><br>Pick where to depart and where to land on the map, then take off from the real runway and fly there with real stall physics, engine fires and fog.<br>Call ATC with <b>M</b> (mic) or press <b>Enter</b> when prompted. After takeoff: <b>P</b> autopilot, <b>H</b> autoland.<br>6 min of sun, 6 min of night, on repeat. Keyboard needed.</p><div id="pm"></div><div style="margin:8px 0;font-size:13px">✈ PLANE: <select id="pls" style="background:#0a1430;color:#dbe8ff;border:1px solid #2f6bff;border-radius:6px;padding:6px 10px;font:inherit;max-width:70%"></select></div><div id="pinfo"></div><button id="go">BOARD THE AIRCRAFT</button></div></div>
 <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css"><script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -367,7 +373,7 @@ al=V>6?Math.atan2(-vb.y,-vb.z):0;const be=V>6?Math.atan2(vb.x,-vb.z):0,qd=.6*V*V
 const CL=al<.28?.3+4.6*Math.max(al,-.3)+flaps*.6:Math.max(.35,1.59-6*(al-.28))+flaps*.4,CD=.06+.07*CL*CL+flaps*.05+gearP*.04+Math.abs(be)*.4;
 gl=qd*CL*.00333/9.8;
 const up=V3().set(0,1,0).applyQuaternion(q),fw=V3().set(0,0,-1).applyQuaternion(q),a=up.clone().multiplyScalar(qd*CL*.00333);
-a.addScaledVector(fw,(fuel>0?thr:0)*4.2*(1-Math.min(V,300)/320)*eng);if(V>.5)a.addScaledVector(vel,-qd*CD*.00333/V);a.y-=9.8;
+a.addScaledVector(fw,(fuel>0?thr:0)*9*(1-Math.min(V,330)/400)*eng);if(V>.5)a.addScaledVector(vel,-qd*CD*.00333/V);a.y-=9.8;
 const tb=W.turb,air=!onG;
 if(air){a.x+=tb*(Math.sin(clock*1.3)+.6*Math.sin(clock*2.9+2))*2+W.wind*.025;a.y+=tb*(Math.sin(clock*1.9+1)+.5*Math.sin(clock*3.7))*2.5}
 vel.addScaledVector(a,dt);pos.addScaledVector(vel,dt);fuel=Math.max(0,fuel-(thr*.0007+.0001)*dt);
@@ -437,7 +443,7 @@ if(gn){osc.frequency.value=45+thr*90;gn.gain.value=listening?0:.02+.05*thr}}
 const eng2=V3();if(fire||dead){plane.updateMatrixWorld();const p=dead?plane.position:plane.localToWorld(eng2.set(6.3,-1.5,0));for(let i=0;i<(dead?7:4);i++){const s=dead?8:1;fireP.emit(p.x+(rnd()-.5)*s*2,p.y+(rnd()-.5)*s,p.z+(rnd()-.5)*s*2,vel.x*.9+(rnd()-.5)*6,vel.y*.9+rnd()*8,vel.z*.9+(rnd()-.5)*6,.8+rnd()*.6);
 if(i<2)smokeP.emit(p.x,p.y+2,p.z,(rnd()-.5)*6,8+rnd()*8,(rnd()-.5)*6,3+rnd()*3)}}
 fireP.up(dt);smokeP.up(dt);fx2(dt);wUp(dt);animGear(dt);camUp(dt);env();if(started)drawMap();
-if((hudT+=dt)>.12){hudT=0;hud()}if(czOn)czSend();else R.render(S,cam)}
+if((hudT+=dt)>.12){hudT=0;hud()}if(czOn)czSend();else R.render(S,cam);pfDraw()}
 // ---- real-world view: streams the plane pose into cesium.html (iframe) ----
 const CZ_ORIGIN='EIDW';let czOn=false;const czE=new T.Euler(0,0,0,'YXZ');
 function czSend(){terrCheck(plane.position);const f=$('cz').contentWindow;if(!f)return;const p=plane.position;czE.setFromQuaternion(plane.quaternion,'YXZ');
@@ -489,12 +495,38 @@ function initPick(){pmap=new maplibregl.Map({container:'pm',center:[-6.27,53.42]
  pinfo();const tryLoad=()=>loadWorld().catch(e=>{try{pmap.getSource('apt').setData({type:'FeatureCollection',features:APT_FALLBACK.map(a=>({type:'Feature',geometry:{type:'Point',coordinates:[a[3],a[2]]},properties:{i:a[0],id:a[0],n:a[1],e:a[4],t:'large_airport'}}))})}catch(_){}const p=$('pinfo');p.textContent='Could not load the full airport list ('+(e&&e.message||'offline')+'). Showing major airports only. ';const a=document.createElement('a');a.href='#';a.textContent='Retry';a.style.color='#ffd23f';a.onclick=ev=>{ev.preventDefault();p.textContent='Loading airports…';tryLoad()};p.appendChild(a)});tryLoad()}
 function setupReal(){const A=SEL.from,B=SEL.to,ra=RWY[A.id]||{lat:A.lat,lon:A.lon,hd:0,len:1800},rb=RWY[B.id]||{lat:B.lat,lon:B.lon,hd:0,len:1500},k=PI/180,Ha=ra.hd*k,Re=6371000;
  const N=(rb.lat-ra.lat)*k*Re,E=(rb.lon-ra.lon)*k*Re*Math.cos(ra.lat*k);
- window.HD0=ra.hd;window.GE={a:A.e*.3048,b:B.e*.3048,x:E*Math.cos(Ha)-N*Math.sin(Ha),z:-(E*Math.sin(Ha)+N*Math.cos(Ha))};
+ window.HD0=ra.hd;window.ORG=ra;window.GE={a:A.e*.3048,b:B.e*.3048,x:E*Math.cos(Ha)-N*Math.sin(Ha),z:-(E*Math.sin(Ha)+N*Math.cos(Ha))};
  AP[0]={n:A.n,x:0,z:0,L:ra.len,f:ra.len*.8,r:0};AP[1]={n:B.n,x:GE.x,z:GE.z,L:rb.len,f:rb.len*.8,r:(rb.hd-ra.hd)*k};AP[2]=Object.assign({},AP[0]);
  route[0]=0;route[1]=1;route[2]=0;route[3]=1;
  $('cz').src='maplibre.html?lat='+ra.lat+'&lon='+ra.lon+'&hd='+ra.hd+'&e='+A.e+PQ()}
 function terrCheck(p){if(window.terrH==null||!started||dead||ph!=7||onG||airT<8)return;const g=geAt(p);if(g==null||[AP[0],AP[1]].some(a=>Math.hypot(p.x-a.x,p.z-a.z)<6000))return;if(g+(p.y-3.6)<terrH-3)crash('You flew into the terrain.')}
 const geAt=p=>{if(!window.GE)return null;const d0=Math.hypot(GE.x,GE.z)||1,t=Math.max(0,Math.min(1,1-Math.hypot(GE.x-p.x,GE.z-p.z)/d0));return GE.a+(GE.b-GE.a)*t};
+
+/* ---- primary flight display: speed tape, attitude, altitude tape, heading, data bar ---- */
+const pfC={S:$('pfS'),H:$('pfH'),G:$('pfG'),A:$('pfA')},pfX={};for(const k in pfC)pfX[k]=pfC[k].getContext('2d');
+const pfE=new T.Euler();let pfBarT=0;
+function pfTape(x,val,o){const c=x.canvas,w=c.width,h=c.height,k=2,ppu=o.ppu*k;x.clearRect(0,0,w,h);x.fillStyle='rgba(8,14,26,.62)';x.beginPath();x.roundRect(0,0,w,h,16);x.fill();x.save();x.beginPath();x.roundRect(0,0,w,h,16);x.clip();
+ if(o.bands){for(let y=0;y<h;y+=3){const v=val+(h/2-y)/ppu,col=o.bands(v);if(col){x.fillStyle=col;x.fillRect(o.left?0:w-10,y,10,3)}}}
+ x.font='bold 22px ui-monospace,Menlo,monospace';x.textBaseline='middle';x.fillStyle='#cfe0ff';x.strokeStyle='rgba(255,255,255,.7)';x.lineWidth=2;
+ const lo=Math.floor((val-h/2/ppu)/o.step)*o.step;for(let v=lo;v<=val+h/2/ppu;v+=o.step){const y=h/2-(v-val)*ppu,big=Math.round(v/o.step)%o.lab==0;x.beginPath();if(o.left){x.moveTo(w-4,y);x.lineTo(w-(big?22:12),y)}else{x.moveTo(4,y);x.lineTo(big?22:12,y)}x.stroke();if(big&&v>=0){x.textAlign=o.left?'right':'left';x.fillText(String(Math.round(v)),o.left?w-28:28,y)}}
+ x.restore();x.fillStyle='#05080f';x.strokeStyle='#fff';x.lineWidth=2;x.beginPath();x.roundRect(6,h/2-26,w-12,52,10);x.fill();x.stroke();x.fillStyle='#fff';x.textAlign='center';x.font='bold 26px ui-monospace,Menlo,monospace';x.fillText(Math.round(val).toLocaleString('en-US'),w/2-4,h/2-1);x.font='bold 12px ui-monospace,Menlo,monospace';x.fillStyle='#9db8ff';x.fillText(o.unit,w/2-4,h/2+19)}
+function pfHorizon(x,pitch,roll){const w=x.canvas.width,h=x.canvas.height,ppd=6.4;x.clearRect(0,0,w,h);x.save();x.beginPath();x.roundRect(0,0,w,h,24);x.clip();x.translate(w/2,h/2);x.rotate(-roll);const py=pitch*ppd;
+ let g=x.createLinearGradient(0,py-500,0,py);g.addColorStop(0,'#2f7fe0');g.addColorStop(1,'#63b0ff');x.fillStyle=g;x.fillRect(-600,py-600,1200,600);
+ g=x.createLinearGradient(0,py,0,py+500);g.addColorStop(0,'#a8692f');g.addColorStop(1,'#6b3f17');x.fillStyle=g;x.fillRect(-600,py,1200,700);
+ x.strokeStyle='#fff';x.lineWidth=3;x.beginPath();x.moveTo(-600,py);x.lineTo(600,py);x.stroke();x.lineWidth=2;x.fillStyle='#fff';x.font='bold 15px ui-monospace,Menlo,monospace';x.textAlign='center';x.textBaseline='middle';
+ for(let p=-40;p<=40;p+=5){if(!p)continue;const y=py-p*ppd,big=p%10==0,hw=big?44:22;x.beginPath();x.moveTo(-hw,y);x.lineTo(hw,y);x.stroke();if(big){x.fillText(Math.abs(p),-hw-16,y);x.fillText(Math.abs(p),hw+16,y)}}
+ x.restore();x.strokeStyle='#4da3ff';x.lineWidth=5;x.beginPath();x.moveTo(w/2-130,h/2);x.lineTo(w/2-60,h/2);x.moveTo(w/2+60,h/2);x.lineTo(w/2+130,h/2);x.stroke();x.fillStyle='#4da3ff';x.beginPath();x.arc(w/2,h/2,5,0,7);x.fill();x.strokeStyle='rgba(120,160,255,.35)';x.lineWidth=2;x.beginPath();x.roundRect(1,1,w-2,h-2,24);x.stroke()}
+function pfHdg(x,hd){const w=x.canvas.width,h=x.canvas.height,ppd=6;x.clearRect(0,0,w,h);x.fillStyle='rgba(8,14,26,.62)';x.beginPath();x.roundRect(0,0,w,h,14);x.fill();x.save();x.beginPath();x.roundRect(0,0,w,h,14);x.clip();x.strokeStyle='rgba(255,255,255,.7)';x.fillStyle='#cfe0ff';x.lineWidth=2;x.font='bold 15px ui-monospace,Menlo,monospace';x.textAlign='center';x.textBaseline='middle';
+ const lo=Math.floor((hd-w/2/ppd)/5)*5;for(let v=lo;v<=hd+w/2/ppd;v+=5){const xx=w/2+(v-hd)*ppd,big=v%10==0;x.beginPath();x.moveTo(xx,h);x.lineTo(xx,h-(big?14:8));x.stroke();if(big){const n=((v%360)+360)%360;x.fillText(String(n/10|0).padStart(2,'0'),xx,h-26)}}x.restore();
+ x.fillStyle='#05080f';x.strokeStyle='#fff';x.lineWidth=2;x.beginPath();x.roundRect(w/2-34,5,68,h-10,8);x.fill();x.stroke();x.fillStyle='#fff';x.font='bold 22px ui-monospace,Menlo,monospace';x.fillText(String(Math.round(hd)%360).padStart(3,'0'),w/2,h/2+1)}
+function pfDraw(){const box=$('pfd');if(!started||dead||$('ov').style.display=='flex'){box.style.display='none';return}box.style.display='flex';
+ const p=plane.position,V=vel.length(),kt=V*1.944,msl=(geAt(p)||0)+p.y-3.6,ft=msl*3.281;pfE.setFromQuaternion(plane.quaternion,'YXZ');
+ const pitch=pfE.x*180/PI,roll=-pfE.z*180/PI*PI/180,hd=((window.HD0||0)-pfE.y*180/PI+720)%360;
+ pfTape(pfX.S,kt,{ppu:1.3,step:10,lab:2,left:true,unit:'KT',bands:v=>v>=500?'#ff3b3b':v>=460?'#ffc233':v<95?'#ff3b3b':v<125?'#ffc233':'#2fd36b'});
+ pfTape(pfX.A,ft,{ppu:.3,step:100,lab:2,left:false,unit:'FT'});
+ pfHorizon(pfX.H,pitch,roll);pfHdg(pfX.G,hd);
+ pfBarT+=1;if(pfBarT%8==1){const agl=(p.y-3.6-hf(p.x,p.z))*3.281,vs=vel.y*196.85,o=window.ORG;let pos='–';if(o){const Ha=o.hd*PI/180,E=p.x*Math.cos(Ha)+(-p.z)*Math.sin(Ha),N=-p.x*Math.sin(Ha)+(-p.z)*Math.cos(Ha),la=o.lat+N/6371000*180/PI,lo=o.lon+E/(6371000*Math.cos(o.lat*PI/180))*180/PI;pos=Math.abs(la).toFixed(4)+(la<0?'S':'N')+' '+Math.abs(lo).toFixed(4)+(lo<0?'W':'E')}
+  const c=(l,v)=>'<div><small>'+l+'</small><b>'+v+'</b></div>';$('pfdbar').innerHTML=c('V/S',(vs>=0?'+':'')+Math.round(vs/50)*50)+c('THR',Math.round(thr*100)+'%')+c('FLAPS',flapS?flapS:'UP')+c('GEAR',gearP>.99?'DN':gearP<.01?'UP':'~~')+c('RA',agl<2500?Math.max(0,Math.round(agl))+' ft':'–')+c('POS',pos)}}
 initPick();
 init(true);started=false;$('ov').style.display='flex';requestAnimationFrame(loop);
 </script></body></html>

@@ -12,7 +12,7 @@ html,body{margin:0;height:100%;background:#050a14;overflow:hidden;font:11px/1.5 
 #map{position:fixed;inset:0}
 .btn{background:rgba(8,16,36,.78);border:1px solid rgba(120,160,255,.25);color:#cfe0ff;padding:7px 12px;border-radius:7px;font:inherit;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap}
 .btn:hover{border-color:#4d8bff}.btn.on{background:#2f6bff;border-color:#2f6bff;color:#fff}
-#bar{position:fixed;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:5}
+#bar{display:none!important;position:fixed;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:5}
 #attr{position:fixed;top:44px;left:50%;transform:translateX(-50%);font-size:8px;opacity:.55;z-index:2;white-space:nowrap;pointer-events:none}
 #hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(6,12,28,.9);border:1px solid #2f6bff;padding:16px 22px;border-radius:10px;z-index:6;text-align:center;display:none;max-width:420px}
 #toast{position:fixed;top:76px;left:50%;transform:translateX(-50%);background:rgba(6,12,28,.9);border:1px solid rgba(120,160,255,.3);padding:7px 16px;border-radius:8px;opacity:0;transition:opacity .3s;z-index:9;pointer-events:none;text-align:center}
@@ -25,14 +25,17 @@ html,body{margin:0;height:100%;background:#050a14;overflow:hidden;font:11px/1.5 
 #bmin{padding:6px 12px;border-radius:7px;background:rgba(8,16,36,.8);font-size:10px;letter-spacing:.1em}
 .maplibregl-popup-content{background:#0a1430;color:#dbe8ff;font:11px/1.5 ui-monospace,Menlo,monospace;border:1px solid #2f6bff66;padding:10px 12px;border-radius:8px}
 .maplibregl-popup-tip{border-top-color:#0a1430!important;border-bottom-color:#0a1430!important}.maplibregl-popup-content b{color:#ffd23f}
+#bmbar{justify-content:flex-start}#bmClose{order:3;margin-left:auto;font-size:20px;line-height:1;padding:6px 14px;background:#c0392b;border-color:#c0392b;color:#fff}
+#mini{position:fixed;right:12px;bottom:12px;width:180px;height:180px;border-radius:50%;overflow:hidden;border:2px solid rgba(120,160,255,.55);z-index:4;background:#0a1a2c;pointer-events:none}
+#miniA{position:fixed;right:12px;bottom:12px;width:180px;height:180px;z-index:5;pointer-events:none;display:flex;align-items:center;justify-content:center}
 </style></head><body>
 <div id="map"></div>
 <div id="bar"><button class="btn" id="bMap">🗺 World map</button><button class="btn" id="bPlane">✈ Plane: <span id="pn">Built-in</span></button></div>
 <div id="attr">© Esri, Maxar, Earthstar Geographics · Terrain: Mapzen / AWS · Buildings: © OpenStreetMap contributors via OpenFreeMap · Airports: OurAirports · Traffic: adsb.lol · MapLibre</div>
 <div id="hint">Waiting for the game…<br><br>Open <b>index.html</b> from your site and press <b>T</b>. This page shows the real world around the plane you fly there.</div>
-<div id="toast"></div>
+<div id="toast"></div><div id="mini"></div><div id="miniA"><svg width="22" height="22" viewBox="-12 -12 24 24"><path d="M0-10L6 8 0 4-6 8Z" fill="#ffd23f" stroke="#000" stroke-width="1.5"/></svg></div>
 <div id="pick" class="pnl"><h2>CHOOSE YOUR PLANE</h2><div id="pickList"></div><p>Add your own: put a <b>.glb</b> in the <b>planes</b> folder and list it in <b>planes/planes.json</b>.</p><button class="btn" id="pickX" style="margin-top:12px">Close</button></div>
-<div id="bigmap"><div id="bm"></div><div id="bmbar"><button class="btn" id="bmClose">✕ Close map</button><button class="btn" id="bmMe">⌖ Centre on me</button><div id="bmin">Loading…</div></div></div>
+<div id="bigmap"><div id="bm"></div><div id="bmbar"><button class="btn" id="bmClose">✕</button><button class="btn" id="bmMe">⌖ Centre on me</button><div id="bmin">Loading…</div></div></div>
 
 <script>
 /* ============ config ============ */
@@ -78,12 +81,13 @@ let map;try{map=mk(120)}catch(e){map=mk(85)}
 const holder=new THREE.Group(),Z=new THREE.Vector3(0,0,1),X=new THREE.Vector3(1,0,0),Y=new THREE.Vector3(0,1,0),qz=new THREE.Quaternion(),qx=new THREE.Quaternion(),qy=new THREE.Quaternion();
 let curModel=null;
 function dbl(o){o.traverse(m=>{if(m.isMesh){(Array.isArray(m.material)?m.material:[m.material]).forEach(x=>x.side=THREE.DoubleSide)}})}
-function builtIn(){const g=new THREE.Group(),W=new THREE.MeshStandardMaterial({color:0xf2f4f7,roughness:.4,metalness:.1}),B=new THREE.MeshStandardMaterial({color:0x1f5fbf,roughness:.5}),Dk=new THREE.MeshStandardMaterial({color:0x222a36,roughness:.6});
+const VAR={a:{c:0x1f5fbf,w:1,e:[6.5]},j:{c:0xc0392b,w:1.3,e:[5,10.5]},g:{c:0x2ea043,w:.8,e:[3.8]}};
+function builtIn(t){const C=VAR[t]||VAR.a,g=new THREE.Group(),W=new THREE.MeshStandardMaterial({color:0xf2f4f7,roughness:.4,metalness:.1}),B=new THREE.MeshStandardMaterial({color:C.c,roughness:.5}),Dk=new THREE.MeshStandardMaterial({color:0x222a36,roughness:.6});
  const add=(geo,m,x,y,z,rx,ry,rz)=>{const o=new THREE.Mesh(geo,m);o.position.set(x,y,z);o.rotation.set(rx||0,ry||0,rz||0);g.add(o);return o};
  add(new THREE.CylinderGeometry(2,2,32,24),W,0,0,0);add(new THREE.ConeGeometry(2,6,24),W,0,19,0);add(new THREE.ConeGeometry(2,8,24),W,0,-20,0,Math.PI);
- add(new THREE.BoxGeometry(17,5,.45),W,-9.5,-1,-1.1,0,0,.5);add(new THREE.BoxGeometry(17,5,.45),W,9.5,-1,-1.1,0,0,-.5);
+ add(new THREE.BoxGeometry(17*C.w,5,.45),W,-9.5*C.w,-1,-1.1,0,0,.5);add(new THREE.BoxGeometry(17*C.w,5,.45),W,9.5*C.w,-1,-1.1,0,0,-.5);
  add(new THREE.BoxGeometry(7,3,.3),W,-3.6,-21,.2,0,0,.4);add(new THREE.BoxGeometry(7,3,.3),W,3.6,-21,.2,0,0,-.4);add(new THREE.BoxGeometry(.4,6,7),B,0,-20,4.2,-.25,0,0);
- [-1,1].forEach(s=>{add(new THREE.CylinderGeometry(1.2,1.05,4.5,16),W,s*6.5,1.5,-2.4);add(new THREE.CylinderGeometry(.9,.9,.1,16),Dk,s*6.5,3.8,-2.4)});
+ [-1,1].forEach(s=>C.e.forEach(x=>{add(new THREE.CylinderGeometry(1.2,1.05,4.5,16),W,s*x,1.5,-2.4);add(new THREE.CylinderGeometry(.9,.9,.1,16),Dk,s*x,3.8,-2.4)}));
  add(new THREE.BoxGeometry(3.6,.12,1.1),Dk,0,14,.9,.35,0,0);
  [[0,12],[-2.4,-2],[2.4,-2]].forEach(([x,y])=>{add(new THREE.CylinderGeometry(.55,.55,.4,12),Dk,x,y,-3.0,0,0,Math.PI/2)});
  dbl(g);modelLen=44;return g}
@@ -91,36 +95,46 @@ function setModel(m,len){if(curModel)holder.remove(curModel);curModel=m;holder.a
 const layer={id:'plane3d',type:'custom',renderingMode:'3d',
  onAdd(m,gl){this.camera=new THREE.Camera();this.scene=new THREE.Scene();this.scene.add(new THREE.AmbientLight(0xffffff,.8));const d=new THREE.DirectionalLight(0xffffff,.9);d.position.set(.4,-.6,1);this.scene.add(d);this.scene.add(holder);
   this.renderer=new THREE.WebGLRenderer({canvas:m.getCanvas(),context:gl,antialias:true});this.renderer.autoClear=false},
- render(gl,args){if(!P.have||!holder.visible)return;const mat=args&&args.defaultProjectionData?args.defaultProjectionData.mainMatrix:(args&&args.modelViewProjectionMatrix)||args;
+ render(gl,args){if(!P.have||!holder.visible)return;try{const mat=args&&args.defaultProjectionData?args.defaultProjectionData.mainMatrix:(args&&args.modelViewProjectionMatrix)||args;
   const mc=maplibregl.MercatorCoordinate.fromLngLat([P.lon,P.lat],P.alt),s=mc.meterInMercatorCoordinateUnits();
   const m=new THREE.Matrix4().fromArray(mat),l=new THREE.Matrix4().makeTranslation(mc.x,mc.y,mc.z).scale(new THREE.Vector3(s,-s,s));
-  this.camera.projectionMatrix=m.multiply(l);this.renderer.resetState();this.renderer.render(this.scene,this.camera)}};
-map.on('load',()=>{map.addLayer(layer);setModel(builtIn(),44);ready=true;restorePlane()});
+  this.camera.projectionMatrix=m.multiply(l);this.renderer.resetState();this.renderer.render(this.scene,this.camera)}catch(e){if(!this.err){this.err=1;console.error('plane render',e);toast('Plane render error: '+e.message,9000)}}}};
+let layerOK=false;
+function initLayer(){if(ready)return;ready=true;/* camera works even if the 3D plane fails */
+ try{map.addLayer(layer);setModel(builtIn(),44);layerOK=true}catch(e){console.error('plane layer failed',e);toast('3D plane failed to start: '+(e&&e.message||e),9000)}
+ restorePlane()}
+map.on('error',e=>console.warn('map error:',e&&e.error&&e.error.message||e));
+if(map.isStyleLoaded())initLayer();else map.once('style.load',initLayer);
+map.on('load',initLayer);
 map.once('idle',()=>{try{const el=map.queryTerrainElevation([origin.lon,origin.lat]);if(el!=null&&isFinite(el))gH=el}catch(e){}});
 
 /* ---------- plane picker (planes/planes.json) ---------- */
-let planes=[{name:'Built-in airliner',builtin:true}];const loader=new THREE.GLTFLoader();
+let planes=[{name:'Airliner (twin jet, blue)',builtin:true,t:'a'},{name:'Jumbo (4 engines, red)',builtin:true,t:'j'},{name:'Regional jet (green)',builtin:true,t:'g'}];const loader=new THREE.GLTFLoader();
 function loadGlb(p){return new Promise((res,rej)=>loader.load('planes/'+p.file,g=>{
  const inner=new THREE.Group();inner.add(g.scene);inner.rotation.y=(p.yaw!=null?p.yaw:180)*D2R;const wrap=new THREE.Group();wrap.add(inner);wrap.rotation.x=Math.PI/2;dbl(wrap);
  const root=new THREE.Group();root.add(wrap);root.updateMatrixWorld(true);let b=new THREE.Box3().setFromObject(root),sz=b.getSize(new THREE.Vector3());
  const len=p.length||sz.y,k=p.length?p.length/sz.y:(p.scale||1);root.scale.setScalar(k);root.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(root);const c=b.getCenter(new THREE.Vector3());
  root.position.set(-c.x,-c.y,-GEAR_H-b.min.z);const out=new THREE.Group();out.add(root);res({m:out,len:len});},undefined,()=>rej(new Error('missing'))))}
-async function pickPlane(p,quiet){try{if(p.builtin)setModel(builtIn(),44);else{const r=await loadGlb(p);setModel(r.m,r.len)}$('pn').textContent=p.name;try{localStorage.setItem('skyPlane',p.name)}catch(e){}}catch(e){toast('planes/'+p.file+' was not found. Using the built-in plane.',4000);setModel(builtIn(),44);$('pn').textContent='Built-in airliner'}}
+async function pickPlane(p,quiet){try{if(p.builtin)setModel(builtIn(p.t),44);else{const r=await loadGlb(p);setModel(r.m,r.len)}$('pn').textContent=p.name;try{localStorage.setItem('skyPlane',p.name)}catch(e){}}catch(e){toast('planes/'+p.file+' was not found. Using the built-in plane.',4000);setModel(builtIn(),44);$('pn').textContent='Built-in airliner'}}
 function buildPick(){const l=$('pickList');l.innerHTML='';planes.forEach(p=>{const b=document.createElement('button');b.className='btn';b.textContent=p.name+(p.builtin?'':'  ('+p.file+')');b.onclick=()=>{$('pick').style.display='none';pickPlane(p)};l.appendChild(b)})}
 fetch('planes/planes.json').then(r=>r.ok?r.json():[]).catch(()=>[]).then(j=>{planes=planes.concat(Array.isArray(j)?j:[]);buildPick();restorePlane()});
-let restored=false;function restorePlane(){if(restored||!ready||planes.length<2)return;restored=true;let n=null;try{n=localStorage.getItem('skyPlane')}catch(e){}const p=planes.find(x=>x.name===n);if(p&&!p.builtin)pickPlane(p)}
+let restored=false;function restorePlane(){if(restored||!ready||planes.length<2)return;restored=true;let n=null;try{n=localStorage.getItem('skyPlane')}catch(e){}const p=planes.find(x=>x.name===n);if(p)pickPlane(p)}
 $('bPlane').onclick=e=>{e.target.blur();$('pick').style.display='block'};$('pickX').onclick=()=>$('pick').style.display='none';
 
 /* ---------- pose from the game ---------- */
-addEventListener('message',e=>{const d=e.data;if(!d||d.type!=='pose')return;
+addEventListener('message',e=>{const d=e.data;if(d&&d.type=='openPick'){$('pick').style.display='block';return}if(d&&d.type=='worldmap'){$('bMap').click();return}if(!d||d.type!=='pose')return;
  const Ha=origin.hd*D2R,E=d.x*Math.cos(Ha)+(-d.z)*Math.sin(Ha),N=-d.x*Math.sin(Ha)+(-d.z)*Math.cos(Ha);
  P.lat=origin.lat+N/R_E/D2R;P.lon=origin.lon+E/(R_E*Math.cos(origin.lat*D2R))/D2R;P.alt=gH+d.y+GEAR_H;
- P.hdg=(d.hdg||0)*D2R+Ha;P.th=(d.pitch||0)*D2R;P.rl=(d.roll||0)*D2R;P.view=d.view;P.day=d.day==null?1:d.day;P.have=true;lastPose=performance.now();$('hint').style.display='none'});
-setTimeout(()=>{if(!P.have)$('hint').style.display='block'},5000);
+ P.hdg=(d.hdg||0)*D2R+Ha;P.th=(d.pitch||0)*D2R;P.rl=(d.roll||0)*D2R;P.view=d.view;P.day=d.day==null?1:d.day;P.have=true;lastPose=performance.now();miniUp()});
+setInterval(()=>{const h=$('hint');let m='';
+ if(!P.have&&performance.now()>5000)m='Waiting for the game…<br><br>Open <b>index.html</b> from your site and press <b>T</b>. This page shows the real world around the plane you fly there.';
+ else if(P.have&&!ready)m='Loading the real world…';
+ if(m){h.innerHTML=m;h.style.display='block'}else h.style.display='none'},700);
 
 /* ---------- camera ---------- */
 const off=(lat,lon,b,d)=>[lat+d*Math.cos(b)/R_E/D2R,lon+d*Math.sin(b)/(R_E*Math.cos(lat*D2R))/D2R];
-function frame(){requestAnimationFrame(frame);if(!P.have||!ready)return;
+function frame(){requestAnimationFrame(frame);if(!P.have||!ready)return;try{frameBody()}catch(e){if(!frame.err){frame.err=1;console.error('camera',e);toast('Camera error: '+(e&&e.message||e),9000)}}}
+function frameBody(){
  qz.setFromAxisAngle(Z,-P.hdg);qx.setFromAxisAngle(X,P.th);qy.setFromAxisAngle(Y,P.rl);holder.quaternion.copy(qz).multiply(qx).multiply(qy);
  if(!drag){lk.h*=.94;lk.p*=.94}
  const cock=P.view!=2;holder.visible=!cock;const cb=P.hdg+lk.h,mp=(map.getMaxPitch?map.getMaxPitch():85);let la,lo,alt,elev,roll=0;
@@ -175,4 +189,9 @@ function meUpdate(){if(!bmOn||!bm||!bm.getSource('me'))return;bm.getSource('me')
 setInterval(meUpdate,200);setInterval(poll,9000);
 $('bMap').onclick=e=>{e.target.blur();bmOn=true;$('bigmap').style.display='block';if(!bm)initBig();else{bm.resize();poll()}if(P.have&&bm)bm.jumpTo({center:[P.lon,P.lat]})};
 $('bmClose').onclick=()=>{bmOn=false;$('bigmap').style.display='none'};$('bmMe').onclick=()=>{if(P.have)bm.flyTo({center:[P.lon,P.lat],zoom:Math.max(bm.getZoom(),9)});else toast('No plane position yet',2000)};
+
+/* ---------- corner minimap (MapLibre) ---------- */
+let mini=null,lmu=0;try{mini=new maplibregl.Map({container:'mini',attributionControl:false,interactive:false,center:[origin.lon,origin.lat],zoom:11,style:{version:8,sources:{sat:{type:'raster',tiles:[ESRI],tileSize:256,maxzoom:18}},layers:[{id:'sat',type:'raster',source:'sat'}]}})}catch(e){console.warn('minimap',e)}
+function miniUp(){const n=performance.now();if(!mini||n-lmu<250)return;lmu=n;mini.jumpTo({center:[P.lon,P.lat],bearing:P.hdg/D2R})}
+addEventListener('keydown',e=>{if(e.code=='Escape'&&bmOn)$('bmClose').click()});
 </script></body></html>

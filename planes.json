@@ -1,0 +1,97 @@
+[
+ {
+  "name": "Airbus A318",
+  "file": "a318.glb",
+  "length": 31.7
+ },
+ {
+  "name": "Airbus A319",
+  "file": "a319.glb",
+  "length": 33.9
+ },
+ {
+  "name": "Airbus A320",
+  "file": "a320.glb",
+  "length": 38.3
+ },
+ {
+  "name": "Airbus A321",
+  "file": "a321.glb",
+  "length": 44.5
+ },
+ {
+  "name": "Airbus A330-200",
+  "file": "a330-200.glb",
+  "length": 58.4
+ },
+ {
+  "name": "Airbus A330-300",
+  "file": "a330-300.glb",
+  "length": 63.0
+ },
+ {
+  "name": "Airbus A340-300",
+  "file": "a340-300.glb",
+  "length": 66.9
+ },
+ {
+  "name": "Airbus A340-600",
+  "file": "a340-600.glb",
+  "length": 77.1
+ },
+ {
+  "name": "Airbus A350",
+  "file": "a350.glb",
+  "length": 67.0
+ },
+ {
+  "name": "Airbus A380",
+  "file": "a380.glb",
+  "length": 72.7
+ },
+ {
+  "name": "Boeing 737-700",
+  "file": "b737-700.glb",
+  "length": 34.9
+ },
+ {
+  "name": "Boeing 737-800",
+  "file": "b737-800.glb",
+  "length": 39.4
+ },
+ {
+  "name": "Boeing 737-900",
+  "file": "b737-900.glb",
+  "length": 40.6
+ },
+ {
+  "name": "Boeing 747-400",
+  "file": "b747-400.glb",
+  "length": 70.9
+ },
+ {
+  "name": "Boeing 747-8i",
+  "file": "b747-8i.glb",
+  "length": 76.6
+ },
+ {
+  "name": "Boeing 757-200",
+  "file": "b757-200.glb",
+  "length": 46.3
+ },
+ {
+  "name": "Boeing 757-300",
+  "file": "b757-300.glb",
+  "length": 53.5
+ },
+ {
+  "name": "ATR 42",
+  "file": "atr42.glb",
+  "length": 22.8
+ },
+ {
+  "name": "ASK 21 glider",
+  "file": "ask21.glb",
+  "length": 8.3
+ }
+]

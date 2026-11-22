@@ -367,13 +367,13 @@ const rwAt=p=>{for(let i=0;i<3;i++){const a=AP[i],r=a.r||0,dx=p.x-a.x,dz=p.z-a.z
 const ap=(v,t,r)=>v+Math.max(-r,Math.min(r,t-v));
 function step(dt){
 const t={p:(K.KeyS||K.ArrowDown?1:0)-(K.KeyW||K.ArrowUp?1:0),r:(K.KeyD?1:0)-(K.KeyA?1:0),y:(K.ArrowRight?1:0)-(K.ArrowLeft?1:0)};apCtl(t,dt);
-elev=ap(elev,(inv?-1:1)*t.p,3*dt);ail=ap(ail,t.r,3*dt);rud=ap(rud,t.y,3*dt);thr=Math.max(0,Math.min(1,thr+((view!=3&&K.KeyQ?1:0)-(view!=3&&K.KeyE?1:0))*.5*dt));flaps=ap(flaps,flapS/3,.4*dt);brake=K.KeyB||apBrk?1:0;
+elev=ap(elev,(inv?-1:1)*t.p,3*dt);ail=ap(ail,t.r,3*dt);rud=ap(rud,t.y,3*dt);thr=Math.max(0,Math.min(1,thr+((view!=3&&K.KeyQ?1:0)-(view!=3&&K.KeyE?1:0))*1.0*dt));flaps=ap(flaps,flapS/3,.4*dt);brake=K.KeyB||apBrk?1:0;
 const q=plane.quaternion,pos=plane.position,V=vel.length(),vb=vel.clone().applyQuaternion(q.clone().invert());
 al=V>6?Math.atan2(-vb.y,-vb.z):0;const be=V>6?Math.atan2(vb.x,-vb.z):0,qd=.6*V*V,e=Math.min(1,V/70);
 const CL=al<.28?.3+4.6*Math.max(al,-.3)+flaps*.6:Math.max(.35,1.59-6*(al-.28))+flaps*.4,CD=.06+.07*CL*CL+flaps*.05+gearP*.04+Math.abs(be)*.4;
 gl=qd*CL*.00333/9.8;
 const up=V3().set(0,1,0).applyQuaternion(q),fw=V3().set(0,0,-1).applyQuaternion(q),a=up.clone().multiplyScalar(qd*CL*.00333);
-a.addScaledVector(fw,(fuel>0?thr:0)*9*(1-Math.min(V,330)/400)*eng);if(V>.5)a.addScaledVector(vel,-qd*CD*.00333/V);a.y-=9.8;
+a.addScaledVector(fw,(fuel>0?thr:0)*20*(1-Math.min(V,360)/520)*eng);if(V>.5)a.addScaledVector(vel,-qd*CD*.00333/V);a.y-=9.8;
 const tb=W.turb,air=!onG;
 if(air){a.x+=tb*(Math.sin(clock*1.3)+.6*Math.sin(clock*2.9+2))*2+W.wind*.025;a.y+=tb*(Math.sin(clock*1.9+1)+.5*Math.sin(clock*3.7))*2.5}
 vel.addScaledVector(a,dt);pos.addScaledVector(vel,dt);fuel=Math.max(0,fuel-(thr*.0007+.0001)*dt);
@@ -442,8 +442,8 @@ eu.setFromQuaternion(plane.quaternion,'YXZ');pfd(eu,vel.length(),(plane.position
 if(gn){osc.frequency.value=45+thr*90;gn.gain.value=listening?0:.02+.05*thr}}
 const eng2=V3();if(fire||dead){plane.updateMatrixWorld();const p=dead?plane.position:plane.localToWorld(eng2.set(6.3,-1.5,0));for(let i=0;i<(dead?7:4);i++){const s=dead?8:1;fireP.emit(p.x+(rnd()-.5)*s*2,p.y+(rnd()-.5)*s,p.z+(rnd()-.5)*s*2,vel.x*.9+(rnd()-.5)*6,vel.y*.9+rnd()*8,vel.z*.9+(rnd()-.5)*6,.8+rnd()*.6);
 if(i<2)smokeP.emit(p.x,p.y+2,p.z,(rnd()-.5)*6,8+rnd()*8,(rnd()-.5)*6,3+rnd()*3)}}
-fireP.up(dt);smokeP.up(dt);fx2(dt);wUp(dt);animGear(dt);camUp(dt);env();if(started)drawMap();
-if((hudT+=dt)>.12){hudT=0;hud()}if(czOn)czSend();else R.render(S,cam);pfDraw()}
+fireP.up(dt);smokeP.up(dt);fx2(dt);if(!czOn)wUp(dt);animGear(dt);camUp(dt);env();if(started&&!czOn)drawMap();
+if((hudT+=dt)>.12){hudT=0;hud()}if(czOn)czSend();else R.render(S,cam);if(now-pfLast>33){pfLast=now;pfDraw()}}
 // ---- real-world view: streams the plane pose into cesium.html (iframe) ----
 const CZ_ORIGIN='EIDW';let czOn=false;const czE=new T.Euler(0,0,0,'YXZ');
 function czSend(){terrCheck(plane.position);const f=$('cz').contentWindow;if(!f)return;const p=plane.position;czE.setFromQuaternion(plane.quaternion,'YXZ');
@@ -504,7 +504,7 @@ const geAt=p=>{if(!window.GE)return null;const d0=Math.hypot(GE.x,GE.z)||1,t=Mat
 
 /* ---- primary flight display: speed tape, attitude, altitude tape, heading, data bar ---- */
 const pfC={S:$('pfS'),H:$('pfH'),G:$('pfG'),A:$('pfA')},pfX={};for(const k in pfC)pfX[k]=pfC[k].getContext('2d');
-const pfE=new T.Euler();let pfBarT=0;
+let pfLast=0;const pfE=new T.Euler();let pfBarT=0;
 function pfTape(x,val,o){const c=x.canvas,w=c.width,h=c.height,k=2,ppu=o.ppu*k;x.clearRect(0,0,w,h);x.fillStyle='rgba(8,14,26,.62)';x.beginPath();x.roundRect(0,0,w,h,16);x.fill();x.save();x.beginPath();x.roundRect(0,0,w,h,16);x.clip();
  if(o.bands){for(let y=0;y<h;y+=3){const v=val+(h/2-y)/ppu,col=o.bands(v);if(col){x.fillStyle=col;x.fillRect(o.left?0:w-10,y,10,3)}}}
  x.font='bold 22px ui-monospace,Menlo,monospace';x.textBaseline='middle';x.fillStyle='#cfe0ff';x.strokeStyle='rgba(255,255,255,.7)';x.lineWidth=2;

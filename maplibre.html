@@ -140,9 +140,9 @@ function frameBody(){
  const cock=P.view!=2;holder.visible=!cock;const cb=P.hdg+lk.h,mp=(map.getMaxPitch?map.getMaxPitch():85);let la,lo,alt,elev,roll=0;
  if(!cock){const Dd=modelLen*1.1+15,U=modelLen*.16+3,dz=U-Dd*Math.sin(P.th*.6);[la,lo]=off(P.lat,P.lon,cb+Math.PI,Dd);alt=P.alt+dz;elev=-Math.atan2(dz,Dd)/D2R+lk.p/D2R}
  else{const f=modelLen*.38;[la,lo]=off(P.lat,P.lon,P.hdg,f*Math.cos(P.th));alt=P.alt+1.6+f*Math.sin(P.th);elev=P.th/D2R+lk.p/D2R;roll=P.rl/D2R*ROLL_SIGN}
- const fc=map.getFreeCameraOptions();fc.position=maplibregl.MercatorCoordinate.fromLngLat([lo,la],alt);
- const pitch=clamp(90+elev,0,mp),bearing=cb/D2R;if(fc.setRollPitchBearing)fc.setRollPitchBearing(roll,pitch,bearing);else fc.setPitchBearing(pitch,bearing);
- map.setFreeCameraOptions(fc)}
+ const L=2000,er=elev*D2R,tg=off(la,lo,cb,L*Math.cos(er));
+ const o=map.calculateCameraOptionsFromTo(new maplibregl.LngLat(lo,la),alt,new maplibregl.LngLat(tg[1],tg[0]),alt+L*Math.sin(er));
+ o.roll=roll;map.jumpTo(o)}
 requestAnimationFrame(frame);
 // day / night from the game's clock
 let lastF=-1;setInterval(()=>{if(!ready)return;const f=sm(-.12,.25,P.day);if(Math.abs(f-lastF)<.02)return;lastF=f;

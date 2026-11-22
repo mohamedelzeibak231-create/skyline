@@ -10,13 +10,13 @@
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:#050a14;overflow:hidden;font:11px/1.5 ui-monospace,Menlo,Consolas,monospace;color:#dbe8ff}
 #map{position:fixed;inset:0}
-.btn{background:rgba(8,16,36,.78);border:1px solid rgba(120,160,255,.25);color:#cfe0ff;padding:7px 12px;border-radius:7px;font:inherit;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;backdrop-filter:blur(8px);white-space:nowrap}
+.btn{background:rgba(8,16,36,.78);border:1px solid rgba(120,160,255,.25);color:#cfe0ff;padding:7px 12px;border-radius:7px;font:inherit;font-size:10px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;white-space:nowrap}
 .btn:hover{border-color:#4d8bff}.btn.on{background:#2f6bff;border-color:#2f6bff;color:#fff}
 #bar{display:none!important;position:fixed;top:8px;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:5}
 #attr{position:fixed;top:44px;left:50%;transform:translateX(-50%);font-size:8px;opacity:.55;z-index:2;white-space:nowrap;pointer-events:none}
 #hint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(6,12,28,.9);border:1px solid #2f6bff;padding:16px 22px;border-radius:10px;z-index:6;text-align:center;display:none;max-width:420px}
 #toast{position:fixed;top:76px;left:50%;transform:translateX(-50%);background:rgba(6,12,28,.9);border:1px solid rgba(120,160,255,.3);padding:7px 16px;border-radius:8px;opacity:0;transition:opacity .3s;z-index:9;pointer-events:none;text-align:center}
-.pnl{background:rgba(6,12,28,.92);border:1px solid rgba(120,160,255,.25);border-radius:10px;backdrop-filter:blur(8px)}
+.pnl{background:rgba(6,12,28,.92);border:1px solid rgba(120,160,255,.25);border-radius:10px;}
 #pick{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,92vw);padding:16px 18px;z-index:20;display:none}
 #pick h2{margin:0 0 10px;font-size:14px;letter-spacing:.14em;color:#fff}#pick .btn{display:block;width:100%;text-align:left;margin:5px 0}
 #pick p{color:#8ea6cf;margin:10px 0 0}
@@ -73,8 +73,10 @@ const style={version:8,glyphs:GLYPHS,
   {id:'bld',type:'fill-extrusion',source:'omt','source-layer':'building',minzoom:15,paint:{'fill-extrusion-color':'#d3d6db','fill-extrusion-height':['coalesce',['get','render_height'],6],'fill-extrusion-base':['coalesce',['get','render_min_height'],0],'fill-extrusion-opacity':.92}}],
  terrain:{source:'dem',exaggeration:1},
  sky:{'sky-color':'#7fb8ff','horizon-color':'#e4f0ff','fog-color':'#e4f0ff','sky-horizon-blend':.5,'horizon-fog-blend':.6,'fog-ground-blend':.4}};
-const mk=mp=>new maplibregl.Map({container:'map',style,center:[origin.lon,origin.lat],zoom:14,pitch:80,maxPitch:mp,maxZoom:24,interactive:false,attributionControl:false,pixelRatio:Math.min(devicePixelRatio||1,1.25),fadeDuration:0,maxTileCacheSize:512,canvasContextAttributes:{antialias:false}});
+const mk=mp=>new maplibregl.Map({container:'map',style,center:[origin.lon,origin.lat],zoom:14,pitch:80,maxPitch:mp,maxZoom:24,interactive:false,attributionControl:false,pixelRatio:Math.min(devicePixelRatio||1,1.25),fadeDuration:0,maxTileCacheSize:256,canvasContextAttributes:{antialias:false}});
 let map;try{map=mk(120)}catch(e){map=mk(85)}
+try{const cv=map.getCanvas();cv.addEventListener('webglcontextlost',e=>{e.preventDefault();console.warn('webgl context lost')});cv.addEventListener('webglcontextrestored',()=>{try{map.triggerRepaint()}catch(x){}})}catch(e){}
+addEventListener('error',ev=>{try{toast('Map error: '+(ev.message||'unknown'),6000)}catch(x){}});
 
 /* ---------- 3D plane (three.js custom layer) ---------- */
 const holder=new THREE.Group(),Z=new THREE.Vector3(0,0,1),X=new THREE.Vector3(1,0,0),Y=new THREE.Vector3(0,1,0),qz=new THREE.Quaternion(),qx=new THREE.Quaternion(),qy=new THREE.Quaternion();
@@ -99,7 +101,7 @@ const layer={id:'plane3d',type:'custom',renderingMode:'3d',
   const m=new THREE.Matrix4().fromArray(mat),l=new THREE.Matrix4().makeTranslation(mc.x,mc.y,mc.z).scale(new THREE.Vector3(s,-s,s));
   this.camera.projectionMatrix=m.multiply(l);this.renderer.resetState();this.renderer.render(this.scene,this.camera)}catch(e){if(!this.err){this.err=1;console.error('plane render',e);toast('Plane render error: '+e.message,9000)}}}};
 let errMsg='',layerOK=false;
-function initLayer(){if(ready)return;ready=true;try{if(map.setSourceTileLodParams){map.setSourceTileLodParams(4,4,'sat');map.setSourceTileLodParams(4,4,'dem')}}catch(e){console.warn('lod',e)}
+function initLayer(){if(ready)return;ready=true;
  try{if(map.setCenterClampedToGround)map.setCenterClampedToGround(false);else errMsg='This MapLibre build has no setCenterClampedToGround'}catch(e){errMsg='clamp: '+(e&&e.message||e)}
 /* camera works even if the 3D plane fails */
  try{map.addLayer(layer);setModel(builtIn(),44);layerOK=true}catch(e){console.error('plane layer failed',e);toast('3D plane failed to start: '+(e&&e.message||e),9000)}

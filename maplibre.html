@@ -64,17 +64,17 @@ const $=id=>document.getElementById(id),D2R=Math.PI/180,R_E=6371000,clamp=(v,a,b
 const Q=new URLSearchParams(location.search),origin=Q.get('lat')?{i:'USR',n:'Start',lat:+Q.get('lat'),lon:+Q.get('lon'),e:+Q.get('e')||0,hd:+Q.get('hd')||0}:(AIRPORTS.find(a=>a.i===(Q.get('origin')||'EIDW'))||AIRPORTS[0]);
 const hav=(a,b,c,d)=>{a*=D2R;b*=D2R;c*=D2R;d*=D2R;const x=Math.sin((c-a)/2)**2+Math.cos(a)*Math.cos(c)*Math.sin((d-b)/2)**2;return 2*R_E*Math.asin(Math.sqrt(x))};
 let tt;function toast(s,ms){const e=$('toast');e.textContent=s;e.style.opacity=1;clearTimeout(tt);tt=setTimeout(()=>e.style.opacity=0,ms||3000)}
-const P={have:false,lat:origin.lat,lon:origin.lon,alt:origin.e*.3048+GEAR_H,hdg:0,th:0,rl:0,view:2,day:1};let gH=origin.e*.3048,lk={h:0,p:0},drag=false,ready=false,lastPose=0,modelLen=40;
+const P={have:false,lat:origin.lat,lon:origin.lon,alt:origin.e*.3048+GEAR_H,hdg:0,th:0,rl:0,view:2,day:1};let gOff=0,lastTq=0,gH=origin.e*.3048,lk={h:0,p:0},drag=false,ready=false,lastPose=0,modelLen=40;
 
 /* ---------- map ---------- */
 const style={version:8,glyphs:GLYPHS,
  sources:{sat:{type:'raster',tiles:[ESRI],tileSize:256,maxzoom:18},dem:{type:'raster-dem',tiles:[DEM],encoding:'terrarium',tileSize:256,maxzoom:15},omt:{type:'vector',url:'https://tiles.openfreemap.org/planet'}},
  layers:[{id:'bg',type:'background',paint:{'background-color':'#0a1a2c'}},{id:'sat',type:'raster',source:'sat',paint:{'raster-brightness-max':1}},
   {id:'hill',type:'hillshade',source:'dem',paint:{'hillshade-exaggeration':.22,'hillshade-shadow-color':'#000000','hillshade-highlight-color':'#ffffff'}},
-  {id:'bld',type:'fill-extrusion',source:'omt','source-layer':'building',minzoom:13,paint:{'fill-extrusion-color':'#d3d6db','fill-extrusion-height':['coalesce',['get','render_height'],6],'fill-extrusion-base':['coalesce',['get','render_min_height'],0],'fill-extrusion-opacity':.92}}],
+  {id:'bld',type:'fill-extrusion',source:'omt','source-layer':'building',minzoom:15,paint:{'fill-extrusion-color':'#d3d6db','fill-extrusion-height':['coalesce',['get','render_height'],6],'fill-extrusion-base':['coalesce',['get','render_min_height'],0],'fill-extrusion-opacity':.92}}],
  terrain:{source:'dem',exaggeration:1},
  sky:{'sky-color':'#7fb8ff','horizon-color':'#e4f0ff','fog-color':'#e4f0ff','sky-horizon-blend':.5,'horizon-fog-blend':.6,'fog-ground-blend':.4}};
-const mk=mp=>new maplibregl.Map({container:'map',style,center:[origin.lon,origin.lat],zoom:14,pitch:80,maxPitch:mp,maxZoom:24,interactive:false,attributionControl:false,pixelRatio:Math.min(devicePixelRatio||1,1.5),canvasContextAttributes:{antialias:true}});
+const mk=mp=>new maplibregl.Map({container:'map',style,center:[origin.lon,origin.lat],zoom:14,pitch:80,maxPitch:mp,maxZoom:24,interactive:false,attributionControl:false,pixelRatio:1,fadeDuration:0,canvasContextAttributes:{antialias:false}});
 let map;try{map=mk(120)}catch(e){map=mk(85)}
 
 /* ---------- 3D plane (three.js custom layer) ---------- */
@@ -143,14 +143,14 @@ function loadGlb(p){return new Promise((res,rej)=>loader.load(p.file,g=>{
  root.position.set(-c.x,-c.y,-GEAR_H-b.min.z);const out=new THREE.Group();out.add(root);res({m:out,len:len,gear:gear});},undefined,()=>rej(new Error('missing'))))}
 async function pickPlane(p,quiet){try{if(p.builtin)setModel(builtIn(p.t),44);else{const r=await loadGlb(p);setModel(r.m,r.len,r.gear)}$('pn').textContent=p.name;try{localStorage.setItem('skyPlane',p.name)}catch(e){}}catch(e){toast(p.file+' was not found. Using the built-in plane.',4000);setModel(builtIn(),44);$('pn').textContent='Built-in airliner'}}
 function buildPick(){const l=$('pickList');l.innerHTML='';planes.forEach(p=>{const b=document.createElement('button');b.className='btn';b.textContent=p.name+(p.builtin?'':'  ('+p.file+')');b.onclick=()=>{$('pick').style.display='none';pickPlane(p)};l.appendChild(b)})}
-fetch('planes.json').then(r=>r.ok?r.json():[]).catch(()=>[]).then(j=>{planes=planes.concat(Array.isArray(j)?j:[]);buildPick();restorePlane()});
-let restored=false;function restorePlane(){if(restored||!ready||planes.length<2)return;restored=true;let n=Q.get('plane');if(!n)try{n=localStorage.getItem('skyPlane')}catch(e){}const p=planes.find(x=>x.name===n);if(p)pickPlane(p)}
+let planesLoaded=false;fetch('planes.json').then(r=>r.ok?r.json():[]).catch(()=>[]).then(j=>{planes=planes.concat(Array.isArray(j)?j:[]);planesLoaded=true;buildPick();restorePlane()});
+let restored=false;function restorePlane(){if(restored||!ready||!planesLoaded)return;restored=true;let n=Q.get('plane');if(!n)try{n=localStorage.getItem('skyPlane')}catch(e){}const p=planes.find(x=>x.name===n);if(p)pickPlane(p)}
 $('bPlane').onclick=e=>{e.target.blur();$('pick').style.display='block'};$('pickX').onclick=()=>$('pick').style.display='none';
 
 /* ---------- pose from the game ---------- */
 addEventListener('message',e=>{const d=e.data;if(d&&d.type=='openPick'){$('pick').style.display='block';return}if(d&&d.type=='worldmap'){$('bMap').click();return}if(!d||d.type!=='pose')return;
  const Ha=origin.hd*D2R,E=d.x*Math.cos(Ha)+(-d.z)*Math.sin(Ha),N=-d.x*Math.sin(Ha)+(-d.z)*Math.cos(Ha);
- P.lat=origin.lat+N/R_E/D2R;P.lon=origin.lon+E/(R_E*Math.cos(origin.lat*D2R))/D2R;P.alt=(d.ge!=null?d.ge:gH)+d.y+GEAR_H;
+ P.lat=origin.lat+N/R_E/D2R;P.lon=origin.lon+E/(R_E*Math.cos(origin.lat*D2R))/D2R;{const ge=d.ge!=null?d.ge:gH,low=Math.max(0,Math.min(1,1-(d.y-5)/60));const nowT=performance.now();if(ready&&low>0&&nowT-lastTq>90){lastTq=nowT;try{const t=map.queryTerrainElevation([P.lon,P.lat]);if(t!=null&&isFinite(t))gOff+=((t-ge)-gOff)*(low>.99?.25:.08)}catch(e){}}P.alt=ge+gOff*low+d.y+GEAR_H}
  P.hdg=(d.hdg||0)*D2R+Ha;P.th=(d.pitch||0)*D2R;P.rl=(d.roll||0)*D2R;P.view=d.view;P.day=d.day==null?1:d.day;P.gear=d.g==null?1:d.g;P.have=true;lastPose=performance.now();miniUp()});
 setInterval(()=>{const h=$('hint');let m='';
  if(!P.have&&performance.now()>5000)m='Waiting for the game…<br><br>Open <b>index.html</b> from your site and press <b>T</b>. This page shows the real world around the plane you fly there.';
@@ -159,7 +159,9 @@ setInterval(()=>{const h=$('hint');let m='';
 
 /* ---------- camera ---------- */
 const off=(lat,lon,b,d)=>[lat+d*Math.cos(b)/R_E/D2R,lon+d*Math.sin(b)/(R_E*Math.cos(lat*D2R))/D2R];
-function frame(){requestAnimationFrame(frame);if(!P.have||!ready)return;try{frameBody()}catch(e){if(!frame.err){frame.err=1;console.error('camera',e);errMsg='Camera error:<br>'+(e&&e.message||e)}}}
+let qPR=1,fT0=0,fN=0,fAcc=0;
+function adapt(now){if(fT0){fAcc+=now-fT0;fN++}fT0=now;if(fN>=90){const avg=fAcc/fN;fN=fAcc=0;if(avg>26){if(qPR>.6){qPR=Math.max(.5,qPR-.25);try{map.setPixelRatio(qPR)}catch(e){}}else if(!adapt.b){adapt.b=1;try{map.setLayoutProperty('bld','visibility','none')}catch(e){}}}}}
+function frame(now){requestAnimationFrame(frame);if(!P.have||!ready)return;adapt(now||performance.now());try{frameBody()}catch(e){if(!frame.err){frame.err=1;console.error('camera',e);errMsg='Camera error:<br>'+(e&&e.message||e)}}}
 function frameBody(){
  qz.setFromAxisAngle(Z,-P.hdg);qx.setFromAxisAngle(X,P.th);qy.setFromAxisAngle(Y,P.rl);holder.quaternion.copy(qz).multiply(qx).multiply(qy);
  if(!drag){lk.h*=.94;lk.p*=.94}

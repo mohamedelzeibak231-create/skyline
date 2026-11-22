@@ -471,9 +471,13 @@ async function loadWorld(){await new Promise(r=>pmap.loaded()||pmap.isStyleLoade
  for(const r of ar.slice(1)){const t=r[ix('type')];if(t!='large_airport'&&t!='medium_airport')continue;const la=+r[ix('latitude_deg')],lo=+r[ix('longitude_deg')];if(!isFinite(la)||!isFinite(lo))continue;
   feats.push({type:'Feature',geometry:{type:'Point',coordinates:[lo,la]},properties:{i:r[ix('gps_code')]||r[ix('ident')],id:r[ix('ident')],n:r[ix('name')],e:+r[ix('elevation_ft')]||0,t}})}
  const rr=csv(rt),g=rr[0],jx=n=>g.indexOf(n);
+ const REF={};feats.forEach(f=>{REF[f.properties.id]=[f.geometry.coordinates[1],f.geometry.coordinates[0]]});
  for(const r of rr.slice(1)){if(r[jx('closed')]=='1')continue;const L=+r[jx('length_ft')]*.3048,k=r[jx('airport_ident')];if(!(L>0)||(RWY[k]&&RWY[k].len>=L))continue;
-  const a=+r[jx('le_latitude_deg')],b=+r[jx('le_longitude_deg')],c=+r[jx('he_latitude_deg')],d=+r[jx('he_longitude_deg')],hs=r[jx('le_heading_degT')],hd=+hs;
-  if(!(a||b)||!(c||d))continue;RWY[k]={lat:(a+c)/2,lon:(b+d)/2,hd:hs!==''&&isFinite(hd)?hd:(Math.atan2((d-b)*Math.cos(a*PI/180),c-a)*180/PI+360)%360,len:L}}
+  const a=+r[jx('le_latitude_deg')],b=+r[jx('le_longitude_deg')],c=+r[jx('he_latitude_deg')],d=+r[jx('he_longitude_deg')],hs=r[jx('le_heading_degT')],hh=+hs,li=(r[jx('le_ident')]||'').match(/^(\d{1,2})/),
+  haveC=(a||b)&&(c||d);let lat,lon,hd;
+  if(haveC){lat=(a+c)/2;lon=(b+d)/2;hd=(Math.atan2((d-b)*Math.cos((a+c)/2*PI/180),c-a)*180/PI+360)%360}
+  else{const q=REF[k];if(!q)continue;lat=q[0];lon=q[1];hd=hs!==''&&isFinite(hh)?hh:li?(+li[1]*10)%360:NaN;if(!isFinite(hd))continue}
+  RWY[k]={lat,lon,hd,len:L}}
  pmap.getSource('apt').setData({type:'FeatureCollection',features:feats})}
 function initPick(){pmap=new maplibregl.Map({container:'pm',center:[-6.27,53.42],zoom:4,attributionControl:false,style:{version:8,glyphs:'https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf',sources:{sat:{type:'raster',tiles:[ESRI_T],tileSize:256,maxzoom:18},apt:{type:'geojson',data:{type:'FeatureCollection',features:[]}}},
   layers:[{id:'sat',type:'raster',source:'sat'},{id:'apt',type:'circle',source:'apt',paint:{'circle-radius':['interpolate',['linear'],['zoom'],2,3,9,7],'circle-color':['match',['get','t'],'large_airport','#ffd23f','#4da3ff'],'circle-stroke-color':'#fff','circle-stroke-width':1}},

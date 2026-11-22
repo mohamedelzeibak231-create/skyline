@@ -61,7 +61,7 @@ const AIRPORTS=[
 {i:'YSSY',n:'Sydney',lat:-33.9461,lon:151.1772,e:21,hd:340},{i:'FACT',n:'Cape Town',lat:-33.9715,lon:18.6021,e:151,hd:10}];
 /* ================================== */
 const $=id=>document.getElementById(id),D2R=Math.PI/180,R_E=6371000,clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),sm=(a,b,x)=>{x=clamp((x-a)/(b-a),0,1);return x*x*(3-2*x)};
-const Q=new URLSearchParams(location.search),origin=AIRPORTS.find(a=>a.i===(Q.get('origin')||'EIDW'))||AIRPORTS[0];
+const Q=new URLSearchParams(location.search),origin=Q.get('lat')?{i:'USR',n:'Start',lat:+Q.get('lat'),lon:+Q.get('lon'),e:+Q.get('e')||0,hd:+Q.get('hd')||0}:(AIRPORTS.find(a=>a.i===(Q.get('origin')||'EIDW'))||AIRPORTS[0]);
 const hav=(a,b,c,d)=>{a*=D2R;b*=D2R;c*=D2R;d*=D2R;const x=Math.sin((c-a)/2)**2+Math.cos(a)*Math.cos(c)*Math.sin((d-b)/2)**2;return 2*R_E*Math.asin(Math.sqrt(x))};
 let tt;function toast(s,ms){const e=$('toast');e.textContent=s;e.style.opacity=1;clearTimeout(tt);tt=setTimeout(()=>e.style.opacity=0,ms||3000)}
 const P={have:false,lat:origin.lat,lon:origin.lon,alt:origin.e*.3048+GEAR_H,hdg:0,th:0,rl:0,view:2,day:1};let gH=origin.e*.3048,lk={h:0,p:0},drag=false,ready=false,lastPose=0,modelLen=40;
@@ -124,16 +124,17 @@ $('bPlane').onclick=e=>{e.target.blur();$('pick').style.display='block'};$('pick
 /* ---------- pose from the game ---------- */
 addEventListener('message',e=>{const d=e.data;if(d&&d.type=='openPick'){$('pick').style.display='block';return}if(d&&d.type=='worldmap'){$('bMap').click();return}if(!d||d.type!=='pose')return;
  const Ha=origin.hd*D2R,E=d.x*Math.cos(Ha)+(-d.z)*Math.sin(Ha),N=-d.x*Math.sin(Ha)+(-d.z)*Math.cos(Ha);
- P.lat=origin.lat+N/R_E/D2R;P.lon=origin.lon+E/(R_E*Math.cos(origin.lat*D2R))/D2R;P.alt=gH+d.y+GEAR_H;
+ P.lat=origin.lat+N/R_E/D2R;P.lon=origin.lon+E/(R_E*Math.cos(origin.lat*D2R))/D2R;P.alt=(d.ge!=null?d.ge:gH)+d.y+GEAR_H;
  P.hdg=(d.hdg||0)*D2R+Ha;P.th=(d.pitch||0)*D2R;P.rl=(d.roll||0)*D2R;P.view=d.view;P.day=d.day==null?1:d.day;P.have=true;lastPose=performance.now();miniUp()});
 setInterval(()=>{const h=$('hint');let m='';
  if(!P.have&&performance.now()>5000)m='Waiting for the game…<br><br>Open <b>index.html</b> from your site and press <b>T</b>. This page shows the real world around the plane you fly there.';
  else if(P.have&&!ready)m='Loading the real world…';
- if(m){h.innerHTML=m;h.style.display='block'}else h.style.display='none'},700);
+ if(errMsg)m=errMsg;if(m){h.innerHTML=m;h.style.display='block'}else h.style.display='none'},700);
 
 /* ---------- camera ---------- */
 const off=(lat,lon,b,d)=>[lat+d*Math.cos(b)/R_E/D2R,lon+d*Math.sin(b)/(R_E*Math.cos(lat*D2R))/D2R];
-function frame(){requestAnimationFrame(frame);if(!P.have||!ready)return;try{frameBody()}catch(e){if(!frame.err){frame.err=1;console.error('camera',e);toast('Camera error: '+(e&&e.message||e),9000)}}}
+let errMsg='';
+function frame(){requestAnimationFrame(frame);if(!P.have||!ready)return;try{frameBody()}catch(e){if(!frame.err){frame.err=1;console.error('camera',e);errMsg='Camera error:<br>'+(e&&e.message||e)}}}
 function frameBody(){
  qz.setFromAxisAngle(Z,-P.hdg);qx.setFromAxisAngle(X,P.th);qy.setFromAxisAngle(Y,P.rl);holder.quaternion.copy(qz).multiply(qx).multiply(qy);
  if(!drag){lk.h*=.94;lk.p*=.94}
@@ -141,7 +142,7 @@ function frameBody(){
  if(!cock){const Dd=modelLen*1.1+15,U=modelLen*.16+3,dz=U-Dd*Math.sin(P.th*.6);[la,lo]=off(P.lat,P.lon,cb+Math.PI,Dd);alt=P.alt+dz;elev=-Math.atan2(dz,Dd)/D2R+lk.p/D2R}
  else{const f=modelLen*.38;[la,lo]=off(P.lat,P.lon,P.hdg,f*Math.cos(P.th));alt=P.alt+1.6+f*Math.sin(P.th);elev=P.th/D2R+lk.p/D2R;roll=P.rl/D2R*ROLL_SIGN}
  const L=2000,er=elev*D2R,tg=off(la,lo,cb,L*Math.cos(er));
- const o=map.calculateCameraOptionsFromTo(new maplibregl.LngLat(lo,la),alt,new maplibregl.LngLat(tg[1],tg[0]),alt+L*Math.sin(er));
+ let o;try{o=map.calculateCameraOptionsFromTo(new maplibregl.LngLat(lo,la),alt,new maplibregl.LngLat(tg[1],tg[0]),alt+L*Math.sin(er))}catch(e){errMsg='Camera API:<br>'+(e&&e.message||e);o={center:[lo,la],zoom:16,pitch:clamp(90+elev,0,mp),bearing:cb/D2R}}
  o.roll=roll;map.jumpTo(o)}
 requestAnimationFrame(frame);
 // day / night from the game's clock

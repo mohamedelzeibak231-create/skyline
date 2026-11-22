@@ -70,11 +70,10 @@ const P={have:false,lat:origin.lat,lon:origin.lon,alt:origin.e*.3048+GEAR_H,hdg:
 const style={version:8,glyphs:GLYPHS,
  sources:{sat:{type:'raster',tiles:[ESRI],tileSize:256,maxzoom:18},dem:{type:'raster-dem',tiles:[DEM],encoding:'terrarium',tileSize:256,maxzoom:15},omt:{type:'vector',url:'https://tiles.openfreemap.org/planet'}},
  layers:[{id:'bg',type:'background',paint:{'background-color':'#0a1a2c'}},{id:'sat',type:'raster',source:'sat',paint:{'raster-brightness-max':1}},
-  {id:'hill',type:'hillshade',source:'dem',paint:{'hillshade-exaggeration':.22,'hillshade-shadow-color':'#000000','hillshade-highlight-color':'#ffffff'}},
-  {id:'bld',type:'fill-extrusion',source:'omt','source-layer':'building',minzoom:14,paint:{'fill-extrusion-color':'#d3d6db','fill-extrusion-height':['coalesce',['get','render_height'],6],'fill-extrusion-base':['coalesce',['get','render_min_height'],0],'fill-extrusion-opacity':.92}}],
+  {id:'bld',type:'fill-extrusion',source:'omt','source-layer':'building',minzoom:15,paint:{'fill-extrusion-color':'#d3d6db','fill-extrusion-height':['coalesce',['get','render_height'],6],'fill-extrusion-base':['coalesce',['get','render_min_height'],0],'fill-extrusion-opacity':.92}}],
  terrain:{source:'dem',exaggeration:1},
  sky:{'sky-color':'#7fb8ff','horizon-color':'#e4f0ff','fog-color':'#e4f0ff','sky-horizon-blend':.5,'horizon-fog-blend':.6,'fog-ground-blend':.4}};
-const mk=mp=>new maplibregl.Map({container:'map',style,center:[origin.lon,origin.lat],zoom:14,pitch:80,maxPitch:mp,maxZoom:24,interactive:false,attributionControl:false,pixelRatio:Math.min(devicePixelRatio||1,2),fadeDuration:0,maxTileCacheSize:512,canvasContextAttributes:{antialias:true}});
+const mk=mp=>new maplibregl.Map({container:'map',style,center:[origin.lon,origin.lat],zoom:14,pitch:80,maxPitch:mp,maxZoom:24,interactive:false,attributionControl:false,pixelRatio:Math.min(devicePixelRatio||1,1.25),fadeDuration:0,maxTileCacheSize:512,canvasContextAttributes:{antialias:false}});
 let map;try{map=mk(120)}catch(e){map=mk(85)}
 
 /* ---------- 3D plane (three.js custom layer) ---------- */
@@ -159,10 +158,13 @@ setInterval(()=>{const h=$('hint');let m='';
 
 /* ---------- camera ---------- */
 const off=(lat,lon,b,d)=>[lat+d*Math.cos(b)/R_E/D2R,lon+d*Math.sin(b)/(R_E*Math.cos(lat*D2R))/D2R];
-const PR0=Math.min(devicePixelRatio||1,2);let qPR=PR0,fT0=0,fN=0,fAcc=0;
+let PR0=Math.min(devicePixelRatio||1,1.25);let qPR=PR0,fT0=0,fN=0,fAcc=0;
 function adapt(now){if(fT0&&now-fT0<250){fAcc+=now-fT0;fN++}fT0=now;if(fN>=120){const avg=fAcc/fN;fN=fAcc=0;
  if(avg>40&&qPR>1){qPR=Math.max(1,qPR-.25);try{map.setPixelRatio(qPR)}catch(e){}}
  else if(avg<20&&qPR<PR0){qPR=Math.min(PR0,qPR+.25);try{map.setPixelRatio(qPR)}catch(e){}}}}
+const QLV=[{pr:.75,b:0,m:0},{pr:Math.min(devicePixelRatio||1,1.25),b:1,m:1},{pr:Math.min(devicePixelRatio||1,2),b:1,m:1}];
+function setQ(l){const q=QLV[l]||QLV[1];PR0=qPR=q.pr;try{map.setPixelRatio(qPR);map.setLayoutProperty('bld','visibility',q.b?'visible':'none')}catch(e){}adapt.b=0;const mi=document.getElementById('mini'),ma=document.getElementById('miniA');if(mi)mi.style.display=ma.style.display=q.m?'':'none'}
+addEventListener('message',e=>{if(e.data&&e.data.type=='quality')setQ(e.data.v)});
 function frame(now){requestAnimationFrame(frame);if(!P.have||!ready)return;adapt(now||performance.now());try{frameBody()}catch(e){if(!frame.err){frame.err=1;console.error('camera',e);errMsg='Camera error:<br>'+(e&&e.message||e)}}}
 function frameBody(){
  qz.setFromAxisAngle(Z,-P.hdg);qx.setFromAxisAngle(X,P.th);qy.setFromAxisAngle(Y,P.rl);holder.quaternion.copy(qz).multiply(qx).multiply(qy);
@@ -225,6 +227,6 @@ $('bmClose').onclick=()=>{bmOn=false;$('bigmap').style.display='none'};$('bmMe')
 
 /* ---------- corner minimap (MapLibre) ---------- */
 let mini=null,lmu=0;try{mini=new maplibregl.Map({container:'mini',attributionControl:false,interactive:false,center:[origin.lon,origin.lat],zoom:11,style:{version:8,sources:{sat:{type:'raster',tiles:[ESRI],tileSize:256,maxzoom:18}},layers:[{id:'sat',type:'raster',source:'sat'}]}})}catch(e){console.warn('minimap',e)}
-function miniUp(){const n=performance.now();if(!mini||n-lmu<250)return;lmu=n;mini.jumpTo({center:[P.lon,P.lat],bearing:P.hdg/D2R})}
+function miniUp(){const n=performance.now();if(!mini||n-lmu<1000)return;lmu=n;mini.jumpTo({center:[P.lon,P.lat],bearing:P.hdg/D2R})}
 addEventListener('keydown',e=>{if(e.code=='Escape'&&bmOn)$('bmClose').click()});
 </script></body></html>
